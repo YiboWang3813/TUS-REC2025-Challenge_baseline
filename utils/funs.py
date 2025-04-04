@@ -43,9 +43,9 @@ def save_best_network(opt, model, epoch_label, running_loss_val, running_dist_va
     :return:
     '''
 
+    file_name = os.path.join(os.getcwd(),opt.SAVE_PATH, 'val_results', 'best_model_epoch.txt')
     if running_loss_val < val_loss_min:
         val_loss_min = running_loss_val
-        file_name = os.path.join(os.getcwd(),opt.SAVE_PATH, 'val_results', 'best_model_epoch.txt')
         with open(file_name, 'a') as opt_file:
             opt_file.write('------------ best validation loss result - epoch %s: -------------\n' % (str(epoch_label)))
         

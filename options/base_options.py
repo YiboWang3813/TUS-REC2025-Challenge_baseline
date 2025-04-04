@@ -46,9 +46,9 @@ class BaseOptions():
 
         file_name = os.path.join(self.opt.SAVE_PATH, 'config.txt')
         with open(file_name, 'a') as opt_file:
-            opt_file.write('------------ Options -------------\n')
+            # opt_file.write('------------ Options -------------\n')
             for k, v in sorted(args.items()):
                 opt_file.write('%s,%s' % (str(k), str(v)))
                 opt_file.write('\n')
-            opt_file.write('------------ Options -------------\n')
+            # opt_file.write('------------ Options -------------\n')
         return self.opt
