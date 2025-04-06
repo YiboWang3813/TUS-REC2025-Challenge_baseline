@@ -14,11 +14,12 @@ from utils.plot_scans import plot_scans
 from utils.metrics import cal_dist
 
 saved_model_path = os.getcwd()+ '/results/seq_len2__efficientnet_b1__lr0.0001__pred_type_parameter__label_type_point'
-opt,_ = load_config(saved_model_path)
+_,opt = load_config(saved_model_path+'/config.txt')
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_ids
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# create the test set loader
+
+# create testset loader
 opt.FILENAME_TEST=opt.FILENAME_TEST+'.json'
 dset_test = Dataset.read_json(os.path.join(os.getcwd(),opt.SAVE_PATH,opt.FILENAME_TEST),num_samples = -1)
 
@@ -28,7 +29,7 @@ saved_folder_test = os.path.join(os.getcwd(),opt.SAVE_PATH, 'testing','testing_t
 if not os.path.exists(saved_folder_test):
     os.makedirs(saved_folder_test)
 
-generate_GT_ddf = generate_ddf_from_label(opt.FILENAME_CALIB,device)
+generate_GT_ddf = generate_ddf_from_label(os.path.join(os.path.dirname(os.path.realpath(__file__)),opt.FILENAME_CALIB),device)
 
 # ====================================================================
 from utils.evaluation import Evaluation
@@ -36,6 +37,7 @@ Evaluation_test = Evaluation(opt,device, dset_test,'best_validation_dist_model',
 # ====================================================================
 
 for scan_index in range(len(dset_test)):
+
     # load the scan and landmark
     frames, tforms, indices, scan_name = dset_test[scan_index]
     landmark = h5py.File(os.path.join(os.getcwd(),opt.LANDMARK_PATH,"landmark_%03d.h5" %indices[0]), 'r')[scan_name][()]
@@ -44,10 +46,7 @@ for scan_index in range(len(dset_test)):
     labels_GP,labels_GL,labels_LP,labels_LL = generate_GT_ddf.calculate_GT_DDF(frames,tforms,landmark) 
 
     # generate four predicted DDFs
-    start = time.time()
     pred_GP,pred_GL,pred_LP,pred_LL = predict_ddfs(frames,landmark,opt.FILENAME_CALIB,device)
-    end = time.time()
-    time_elapsed.append((end - start)/60)
 
     # plot scan     
     plot_scans(frames,scan_name,indices,labels_GP,pred_GP,saved_folder_test,generate_GT_ddf.tform_calib_scale.cpu(),generate_GT_ddf.image_points.cpu())
@@ -89,6 +88,5 @@ metrics.create_dataset('GPE', len(GPE), dtype=GPE.dtype, data=GPE)
 metrics.create_dataset('GLE', len(GLE), dtype=GLE.dtype, data=GLE)
 metrics.create_dataset('LPE', len(LPE), dtype=LPE.dtype, data=LPE)
 metrics.create_dataset('LLE', len(LLE), dtype=LLE.dtype, data=LLE)
-metrics.create_dataset('time_elapsed', len(time_elapsed), dtype=time_elapsed.dtype, data=time_elapsed)
 metrics.flush()
 metrics.close()

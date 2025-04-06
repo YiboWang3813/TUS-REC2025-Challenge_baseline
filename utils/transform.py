@@ -310,7 +310,7 @@ class TransformAccumulation:
         # transformation from image2 to image0 in mm
         tform_img2_mm_to_img0_mm = torch.matmul(tform_img1_mm_to_img0_mm,tform_img2_mm_to_img1_mm)
         # return point coordinates in image0 in mm, and the transformation from image2 to image0 in mm
-        return torch.matmul(tform_img2_mm_to_img0_mm,torch.matmul(self.tform_image_pixel_to_image_mm,self.image_points)),tform_img2_mm_to_img0_mm
+        return tform_img2_mm_to_img0_mm
 
 
 class PointTransform:

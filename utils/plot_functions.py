@@ -100,17 +100,17 @@ def plotting(gt,frame,axs,step,color,width = 4, scatter = 8, legend_size=50,lege
 
         ax.axis('equal')
         ax.grid(False)
-        ax.legend(fontsize = legend_size,markerscale = 5,scatterpoints = 5)
+        ax.legend(fontsize = legend_size-10,markerscale = 5,scatterpoints = 5)
         # ax.axis('off')
         ax.set_xlabel('x',fontsize=legend_size)
         ax.set_ylabel('y',fontsize=legend_size)
         ax.set_zlabel('z',fontsize=legend_size)
-        plt.rc('xtick', labelsize=legend_size)    # fontsize of the tick labels
-        plt.rc('ytick', labelsize=legend_size)    # fontsize of the tick labels
+        plt.rc('xtick', labelsize=legend_size-30)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=legend_size-30)    # fontsize of the tick labels
         if i==0:
-            ax.view_init(10,30,0)
-        else:
             ax.view_init(30,30,0)
+        else:
+            ax.view_init(120,30,0)
 
 
 def plot_scan_label_pred(gt,pred,frame,color,saved_name,step,width = 4, scatter = 8, legend_size=50):

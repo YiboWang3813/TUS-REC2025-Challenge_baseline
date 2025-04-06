@@ -5,25 +5,32 @@ import torch
 from utils.network import build_model
 from utils.transform import Transforms,TransformAccumulation
 from utils.plot_functions import reference_image_points,read_calib_matrices
-from utils.Transf2DDFs import cal_global_allpts,cal_global_landmark,cal_local_allpts,cal_local_landmark
+from utils.Transf2DDFs import cal_global_ddfs,cal_global_landmark,cal_local_ddfs,cal_local_landmark
+from utils.Transf2DDFs import cal_global_ddfs1,cal_local_ddfs1
 
 
 class Prediction():  
 
-    def __init__(self, parameters,model_name,data_path_calib,model_path,device):
+    def __init__(self, parameters,model_name,data_path_calib,model_path,device,w = 640,h = 480):
         self.parameters = parameters
         self.device = device
         # load previously generated data pairs
         with open(os.getcwd()+ '/' + parameters['SAVE_PATH'] + '/' +"data_pairs.json", "r", encoding='utf-8') as f:
             data_pairs= json.load(f)
-        data_pairs=torch.tensor(data_pairs).to(self.device)
+        self.data_pairs=torch.tensor(data_pairs).to(self.device)
         self.model_name = model_name
         self.model_path = model_path
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = read_calib_matrices(data_path_calib)
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = self.tform_calib_scale.to(self.device),self.tform_calib_R_T.to(self.device), self.tform_calib.to(self.device)
+
         # image points coordinates in image coordinate system, all pixel points
-        self.image_points = reference_image_points([480, 640],[480, 640]).to(self.device)
+        self.image_points = reference_image_points([h, w],[h, w]).to(self.device)
         
+        # delete ============================================================
+        # image points coordinates in image coordinate system, four corner pixel points
+        self.image_points_corner = reference_image_points([h, w],2).to(self.device)
+        #  ============================================================
+
         # transform prediction into 4*4 transformation matrix
         self.transforms = Transforms(
             pred_type=self.parameters['PRED_TYPE'],
@@ -42,7 +49,6 @@ class Prediction():
             )
 
         self.pred_dim = self.type_dim(self.parameters['PRED_TYPE'], self.image_points.shape[1], self.data_pairs.shape[0])
-        self.label_dim = self.type_dim(self.parameters['LABEL_TYPE'], self.image_points.shape[1], self.data_pairs.shape[0])
         
         self.model = build_model(
             self.parameters,
@@ -63,15 +69,25 @@ class Prediction():
         # predict global and local transformations, from model
         transformation_global, transformation_local = self.cal_pred_transformations(frames)
         transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
-        # Global displacement vectors for pixel reconstruction
-        pred_global_allpts_DDF = cal_global_allpts(transformation_global,self.tform_calib_scale,self.image_points)
+
+        # Global displacement vectors for pixel reconstruction and landmark reconstruction
+        pred_global_allpts_DDF,pred_global_landmark_DDF = cal_global_ddfs(transformation_global.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Global displacement vectors for landmark reconstruction
-        pred_global_landmark_DDF = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
-        # Local displacement vectors for pixel reconstruction
-        pred_local_allpts_DDF = cal_local_allpts(transformation_local,self.tform_calib_scale,self.image_points)
+        # transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
+        pred_global_landmark_DDF_test = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
+        # Local displacement vectors for pixel reconstruction and landmark reconstruction
+        pred_local_allpts_DDF,pred_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Local displacement vectors for landmark reconstruction
-        pred_local_landmark_DDF = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
-        
+        pred_local_landmark_DDF_test = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
+
+        # delete ============================================================
+        # Global displacement vectors for pixel reconstruction and landmark reconstruction
+        pred_global_allpts_DDF1,pred_global_landmark_DDF1 = cal_global_ddfs1(transformation_global,self.tform_calib_scale,self.image_points_corner,landmark)
+        # Local displacement vectors for pixel reconstruction and landmark reconstruction
+        pred_local_allpts_DDF1,pred_local_landmark_DDF1 = cal_local_ddfs1(transformation_local,self.tform_calib_scale,self.image_points_corner,landmark)
+        # ============================================================
+
+
         return pred_global_allpts_DDF, pred_global_landmark_DDF, pred_local_allpts_DDF, pred_local_landmark_DDF
 
     def cal_pred_transformations(self,frames):

@@ -28,12 +28,12 @@ dataset_all = Dataset(
     sample_range=opt.SAMPLE_RANGE
     )
 
-## split the entire dataset into Train, Val, and Test
+## split entire dataset into Train, Val, and Test
 dset_folds = dataset_all.partition_by_ratio(
     ratios = [1]*5, 
     randomise=True, 
     )
-# save the indices of the splited train,val and test dataset, for reproducibility
+# save the indices of the splited train, val and test dataset, for reproducibility
 for (idx, ds) in enumerate(dset_folds):
     ds.write_json(os.path.join(os.getcwd(),opt.SAVE_PATH,"fold_{:02d}.json".format(idx))) 
 
@@ -133,7 +133,7 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
         outputs = model(frames)
         # transform prediction according to label type
         preds = transform_prediction(outputs)
-        # calculate loss and metric
+        # calculate loss
         loss = criterion(preds, labels)
         loss.backward()
         optimiser.step()

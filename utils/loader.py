@@ -11,9 +11,9 @@ class Dataset():
     def __init__(self, data_path,num_samples, sample_range, indices_in_use=None):
 
         """
-        :param data_path, file path
+        :param data_path, path to dataset
         :param indices_in_use: 
-            case 1: a list of tuples (idx_subject, idx_scans), indexing self.num_frames[indices_in_use[idx]]
+            case 1: a list of tuples (idx_subject, idx_scans)
             case 2: a list of two lists, [indices_subjects] and [indices_scans], meshgrid to get indices
             case 3: None (default), use all available in the file
         

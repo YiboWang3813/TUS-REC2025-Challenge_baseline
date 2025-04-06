@@ -121,6 +121,15 @@ def load_config(file_path):
             key, value = line.split(": ")
             args[key] = value[:-1]
 
+    args['FREQ_INFO'] = int(args['FREQ_INFO'])
+    args['FREQ_SAVE'] = int(args['FREQ_SAVE'])
+    args['NUM_EPOCHS'] = int(args['NUM_EPOCHS'])
+    args['MINIBATCH_SIZE'] = int(args['MINIBATCH_SIZE'])
+    args['LEARNING_RATE'] = float(args['LEARNING_RATE'])
+    args['NUM_PRED'] = int(args['NUM_PRED'])
+    args['NUM_SAMPLES'] = int(args['NUM_SAMPLES'])
+    args['SAMPLE_RANGE'] = int(args['SAMPLE_RANGE'])
+    
     args_convert = argparse.Namespace(**args)
  
     return args,args_convert

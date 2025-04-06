@@ -24,7 +24,7 @@ def predict_ddfs(frames,landmark,data_path_calib,device):
     model_path = os.getcwd() + '/results/seq_len2__efficientnet_b1__lr0.0001__pred_type_parameter__label_type_point'
     model_name = 'saved_model/best_validation_dist_model'
     # parameters used in baseline code
-    _,parameters = load_config(model_path+'/'+'config.txt')
+    parameters,_ = load_config(model_path+'/'+'config.txt')
 
     prediction = Prediction(parameters,model_name,data_path_calib,model_path,device)
     # generate 4 DDFs for the scan

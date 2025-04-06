@@ -21,7 +21,7 @@ def plot_scans(frames,scan_name,indices,label_GP,pred_GP,saved_folder,tform_cali
     plot_scan_individual(label_global_four,frames,os.path.join(saved_folder,'sub%03d__%s' % (int(indices[0]),scan_name)+'_label'),step = frames.shape[0]-1,color = color[0],width = 4, scatter = 8, legend_size=50, legend = 'GT')
     plot_scan_individual(pred_global_four,frames,os.path.join(saved_folder,'sub%03d__%s' % (int(indices[0]),scan_name)+'_pred'),step = frames.shape[0]-1,color = color[1],width = 4, scatter = 8, legend_size=50, legend = 'Pred')
     # plot label and prediction in the same figure 
-    plot_scan_label_pred(label_global_four,pred_global_four,frames,color,os.path.join(saved_folder,'sub%03d__%s' % (int(scan_name.split('__')[0][3:]),scan_name.split('__')[1])+'_pred_label'),step = frames.shape[0]-1,width = 4, scatter = 8, legend_size=50)
+    plot_scan_label_pred(label_global_four,pred_global_four,frames,color,os.path.join(saved_folder,'sub%03d__%s' % (int(indices[0]),scan_name)+'_pred_label'),step = frames.shape[0]-1,width = 4, scatter = 8, legend_size=50)
 
 def plot_scan_individual(gt,frame,saved_name,step,color,width = 4, scatter = 8, legend_size=50,legend = None):
     # plot the scan in 3D
@@ -72,17 +72,17 @@ def plotting(gt,frame,axs,step,color,width = 4, scatter = 8, legend_size=50,lege
 
         ax.axis('equal')
         ax.grid(False)
-        ax.legend(fontsize = legend_size,markerscale = 5,scatterpoints = 5)
+        ax.legend(fontsize = legend_size-10,markerscale = 5,scatterpoints = 5)
         # ax.axis('off')
         ax.set_xlabel('x',fontsize=legend_size)
         ax.set_ylabel('y',fontsize=legend_size)
         ax.set_zlabel('z',fontsize=legend_size)
-        plt.rc('xtick', labelsize=legend_size)    # fontsize of the tick labels
-        plt.rc('ytick', labelsize=legend_size)    # fontsize of the tick labels
+        plt.rc('xtick', labelsize=legend_size-30)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=legend_size-30)    # fontsize of the tick labels
         if i==0:
-            ax.view_init(10,30,0)
-        else:
             ax.view_init(30,30,0)
+        else:
+            ax.view_init(120,30,0)
 
 def plot_scan_label_pred(gt,pred,frame,color,saved_name,step,width = 4, scatter = 8, legend_size=50):
     # plot the scan in 3D

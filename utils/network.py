@@ -5,8 +5,10 @@ from torchvision.models import efficientnet_b1
 import torch
 
 def build_model(opt,in_frames, pred_dim):
+    
+    model_name = getattr(opt, 'model_name', None) or opt.get('model_name')
 
-    if opt.model_name == "efficientnet_b1":
+    if model_name == "efficientnet_b1":
         model = efficientnet_b1(weights=None)
         model.features[0][0] = torch.nn.Conv2d(
             in_channels  = in_frames, 
