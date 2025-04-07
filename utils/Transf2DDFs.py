@@ -31,7 +31,8 @@ def cal_global_ddfs1(transformation_global,tform_calib_scale,image_points,landma
     d_short = (global_corner_pts_DDF[:,:,2] - global_corner_pts_DDF[:,:,0])/(h-1)
     global_allpts_DDF = global_corner_pts_DDF[:,:,0,None,None] + d_short[:,:,None,None]*i + d_long[:,:,None,None]*j
     # calculate DDF for landmark
-    global_landmark_DDF = global_allpts_DDF[landmark[:,0]-1,:,landmark[:,2],landmark[:,1]].T.numpy()
+    # As the image coordinates of landmark start from 1, which is designed to be consistent with the calibration process, here we need to minus 1
+    global_landmark_DDF = global_allpts_DDF[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy()
     # reshape global_allpts_DDF to (N-1, 3, 307200)
     global_allpts_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],3,-1).numpy()
 
@@ -66,7 +67,7 @@ def cal_local_ddfs1(transformation_local,tform_calib_scale,image_points,landmark
     d_short = (local_corner_pts_DDF[:,:,2] - local_corner_pts_DDF[:,:,0])/(h-1)
     local_allpts_DDF = local_corner_pts_DDF[:,:,0,None,None] + d_short[:,:,None,None]*i + d_long[:,:,None,None]*j
     # calculate DDF for landmark
-    local_landmark_DDF = np.transpose(local_allpts_DDF[landmark[:,0]-1,:,landmark[:,2],landmark[:,1]])
+    local_landmark_DDF = np.transpose(local_allpts_DDF[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1])
     # reshape local_allpts_DDF to (N-1, 3, 307200)
     local_allpts_DDF = local_allpts_DDF.reshape(local_allpts_DDF.shape[0],3,-1)
 
@@ -92,7 +93,7 @@ def cal_global_ddfs(transformation_global,tform_calib_scale,image_points,landmar
     # calculate DDF in mm, displacement from current frame to the first frame
     global_allpts_DDF = global_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(global_allpts.shape[0],-1,-1)
     # calculate DDF for landmark
-    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2],landmark[:,1]].T.cpu().numpy()
+    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.cpu().numpy()
     global_allpts_DDF = global_allpts_DDF.cpu().numpy()
 
     return global_allpts_DDF,global_landmark_DDF
@@ -113,7 +114,7 @@ def cal_global_landmark(transformation_global,landmark,tform_calib_scale):
     global_landmark = torch.zeros(3,len(landmark))
     for i in range(len(landmark)):  
         # point coordinate in image coordinate system (in pixel)  
-        pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).cuda()
+        pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).cuda()
         # calculate global DDF in mm, displacement from current frame to the first frame
         global_landmark[:,i] = torch.matmul(transformation_global[landmark[i][0]-1],torch.matmul(tform_calib_scale,pts_coord))[0:3]-torch.matmul(tform_calib_scale,pts_coord)[0:3]
 
@@ -139,7 +140,7 @@ def cal_local_ddfs(transformation_local,tform_calib_scale,image_points,landmark,
     # calculate DDF in mm, displacement from current frame to the immediately previous frame
     local_allpts_DDF = local_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(local_allpts.shape[0],-1,-1)
     # calculate DDF for landmark
-    local_landmark_DDF = local_allpts_DDF.reshape(local_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2],landmark[:,1]].T.cpu().numpy()
+    local_landmark_DDF = local_allpts_DDF.reshape(local_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.cpu().numpy()
     local_allpts_DDF = local_allpts_DDF.cpu().numpy()
     
     return local_allpts_DDF,local_landmark_DDF
@@ -160,7 +161,7 @@ def cal_local_landmark(transformation_local,landmark,tform_calib_scale):
     local_landmark = torch.zeros(3,len(landmark))
     for i in range(len(landmark)):  
         # point coordinate in image coordinate system (in pixel)  
-        pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).cuda()
+        pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).cuda()
         # calculate DDF in mm, displacement from current frame to the immediately previous frame
         local_landmark[:,i] = torch.matmul(transformation_local[landmark[i][0]-1],torch.matmul(tform_calib_scale,pts_coord))[0:3]-torch.matmul(tform_calib_scale,pts_coord)[0:3]
 

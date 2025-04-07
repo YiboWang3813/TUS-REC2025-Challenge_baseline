@@ -37,7 +37,7 @@ class generate_ddf_from_label():
         # Local displacement vectors for pixel reconstruction and landmark reconstruction
         labels_local_allpts_DDF,labels_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Local displacement vectors for landmark reconstruction
-        c = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
+        labels_local_landmark_DDF_test = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
 
         # # delete ============================================================
         # Global displacement vectors for pixel reconstruction and landmark reconstruction
