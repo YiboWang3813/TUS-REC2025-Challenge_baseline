@@ -4,7 +4,7 @@
 
 import os
 import torch
-import h5py,time
+import h5py
 from utils.loader import Dataset
 from utils.plot_functions import *
 from utils.funs import *
@@ -17,7 +17,6 @@ saved_model_path = os.getcwd()+ '/results/seq_len2__efficientnet_b1__lr0.0001__p
 _,opt = load_config(saved_model_path+'/config.txt')
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_ids
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 # create testset loader
 opt.FILENAME_TEST=opt.FILENAME_TEST+'.json'

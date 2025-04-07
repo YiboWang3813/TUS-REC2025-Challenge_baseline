@@ -68,15 +68,15 @@ class Prediction():
 
         # predict global and local transformations, from model
         transformation_global, transformation_local = self.cal_pred_transformations(frames)
-        transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
 
         # Global displacement vectors for pixel reconstruction and landmark reconstruction
-        pred_global_allpts_DDF,pred_global_landmark_DDF = cal_global_ddfs(transformation_global.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
-        # Global displacement vectors for landmark reconstruction
-        # transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
-        pred_global_landmark_DDF_test = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
+        pred_global_allpts_DDF,pred_global_landmark_DDF = cal_global_ddfs(transformation_global,self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Local displacement vectors for pixel reconstruction and landmark reconstruction
-        pred_local_allpts_DDF,pred_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
+        pred_local_allpts_DDF,pred_local_landmark_DDF = cal_local_ddfs(transformation_local,self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
+        
+        # Global displacement vectors for landmark reconstruction
+        transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
+        pred_global_landmark_DDF_test = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
         # Local displacement vectors for landmark reconstruction
         pred_local_landmark_DDF_test = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
 

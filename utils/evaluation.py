@@ -130,7 +130,7 @@ class Evaluation():
         # coordinates of landmark points in frame 0 coordinate system (mm), global recosntruction  
         labels_global_landmark = torch.zeros(3,len(landmark))
         for i in range(len(landmark)):
-            pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).to(self.device)
+            pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).to(self.device)
             labels_global_landmark[:,i] = torch.matmul(tforms_each_frame2frame0_gt[i],torch.matmul(self.tform_calib_scale.to(self.device),pts_coord))[0:3]-torch.matmul(self.tform_calib_scale.to(self.device),pts_coord)[0:3]
         
         labels_global_landmark_DDF = labels_global_landmark.cpu().numpy()
@@ -173,7 +173,7 @@ class Evaluation():
         # coordinates of landmark points in previous frame coordinate system (mm), local recosntruction  
         labels_local_landmark = torch.zeros(3,len(landmark))
         for i in range(len(landmark)):
-            pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).to(self.device)
+            pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).to(self.device)
             labels_local_landmark[:,i] = torch.matmul(tforms_each_frame_to_prev_frame[i],torch.matmul(self.tform_calib_scale.to(self.device),pts_coord))[0:3]-torch.matmul(self.tform_calib_scale.to(self.device),pts_coord)[0:3]
         
         labels_local_landmark_DDF = labels_local_landmark.cpu().numpy()
@@ -253,7 +253,7 @@ class Evaluation():
 
         pred_global_landmark = torch.zeros(3,len(landmark))
         for i in range(len(landmark)):    
-            pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).to(self.device)
+            pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).to(self.device)
             pred_global_landmark[:,i] = torch.matmul(transformation_global[landmark[i][0]-1].to(self.device),torch.matmul(self.tform_calib_scale.to(self.device),pts_coord))[0:3]-torch.matmul(self.tform_calib_scale.to(self.device),pts_coord)[0:3]
     
         pred_global_landmark_DDF = pred_global_landmark.cpu().numpy()
@@ -273,7 +273,7 @@ class Evaluation():
 
         pred_local_landmark = torch.zeros(3,len(landmark))
         for i in range(len(landmark)):    
-            pts_coord = torch.cat((landmark[i][1:]+1, torch.FloatTensor([0,1])),axis = 0).to(self.device)
+            pts_coord = torch.cat((landmark[i][1:], torch.FloatTensor([0,1])),axis = 0).to(self.device)
             pred_local_landmark[:,i] = torch.matmul(transformation_local[landmark[i][0]-1].to(self.device),torch.matmul(self.tform_calib_scale.to(self.device),pts_coord))[0:3]-torch.matmul(self.tform_calib_scale.to(self.device),pts_coord)[0:3]
     
         pred_local_landmark_DDF = pred_local_landmark.cpu().numpy()
