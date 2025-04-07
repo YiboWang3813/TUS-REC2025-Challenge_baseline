@@ -97,8 +97,8 @@ def cal_global_ddfs(transformation_global,tform_calib_scale,image_points,landmar
     global_allpts_DDF = global_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(global_allpts.shape[0],-1,-1)
     # calculate DDF for landmark
     # As the coordinates of landmark start from 1, which is designed to be consistent with the calibration process, here we need to minus 1
-    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.cpu().numpy()
-    global_allpts_DDF = global_allpts_DDF.cpu().numpy()
+    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy()
+    global_allpts_DDF = global_allpts_DDF.numpy()
 
     return global_allpts_DDF,global_landmark_DDF
 
