@@ -17,7 +17,8 @@ submission/data
 md5sums.txt
 *.zip
 check_ddfs.py
-saved_ddf/
+saved_ddf_1_method/
+saved_ddf_3_methods/
 results/
 
 

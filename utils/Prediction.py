@@ -5,8 +5,7 @@ import torch
 from utils.network import build_model
 from utils.transform import Transforms,TransformAccumulation
 from utils.plot_functions import reference_image_points,read_calib_matrices
-from utils.Transf2DDFs import cal_global_ddfs,cal_global_landmark,cal_local_ddfs,cal_local_landmark
-from utils.Transf2DDFs import cal_global_ddfs1,cal_local_ddfs1
+from utils.Transf2DDFs import cal_global_ddfs,cal_local_ddfs
 
 
 class Prediction():  
