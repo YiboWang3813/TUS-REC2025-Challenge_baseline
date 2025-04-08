@@ -23,17 +23,12 @@ opt.FILENAME_TEST=opt.FILENAME_TEST+'.json'
 dset_test = Dataset.read_json(os.path.join(os.getcwd(),opt.SAVE_PATH,opt.FILENAME_TEST),num_samples = -1)
 
 # save results
-GPE,GLE,LPE,LLE,time_elapsed=[],[],[],[],[]
+GPE,GLE,LPE,LLE=[],[],[],[]
 saved_folder_test = os.path.join(os.getcwd(),opt.SAVE_PATH, 'testing','testing_test_results')
 if not os.path.exists(saved_folder_test):
     os.makedirs(saved_folder_test)
 
 generate_GT_ddf = generate_ddf_from_label(os.path.join(os.path.dirname(os.path.realpath(__file__)),opt.FILENAME_CALIB),device)
-
-# ====================================================================
-from utils.evaluation import Evaluation
-Evaluation_test = Evaluation(opt,device, dset_test,'best_validation_dist_model',saved_folder_test)
-# ====================================================================
 
 for scan_index in range(len(dset_test)):
 
@@ -58,30 +53,9 @@ for scan_index in range(len(dset_test)):
 
     print('%4dth scan: %s is finished.'%(scan_index,scan_name))
 
-    # ====================================================================
-    # generate DDF on test set (previous method)
-    # generate 4 DDFs for each scan, using labels from the dataset
-    Evaluation_test.calculate_GT_DDF(scan_index) 
-    labels_GP_1,labels_GL_1,labels_LP_1,labels_LL_1 = \
-    Evaluation_test.labels_global_allpts_DDF,\
-    Evaluation_test.labels_global_landmark_DDF,\
-    Evaluation_test.labels_local_allpts_DDF,\
-    Evaluation_test.labels_local_landmark_DDF
-
-    # generate 4 DDFs for each scan, using prediction from the model
-    Evaluation_test.generate_pred_values(scan_index)
-    pred_GP_1,pred_GL_1,pred_LP_1,pred_LL_1 = \
-    Evaluation_test.predictions_global_allpts_DDF,\
-    Evaluation_test.pred_global_landmark_DDF,\
-    Evaluation_test.prediction_local_allpts_DDF,\
-    Evaluation_test.pred_local_landmark_DDF
-    # plot the scan
-    Evaluation_test.scan_plot(scan_index)
-    print('%4d scans is finished.'%scan_index)
-    # ====================================================================
 
 # save results into .h5 file
-GPE,GLE,LPE,LLE,time_elapsed = np.array(GPE),np.array(GLE),np.array(LPE),np.array(LLE),np.array(time_elapsed)
+GPE,GLE,LPE,LLE = np.array(GPE),np.array(GLE),np.array(LPE),np.array(LLE)
 metrics = h5py.File(os.path.join(opt.SAVE_PATH,"metrics.h5"),'a')
 metrics.create_dataset('GPE', len(GPE), dtype=GPE.dtype, data=GPE)
 metrics.create_dataset('GLE', len(GLE), dtype=GLE.dtype, data=GLE)

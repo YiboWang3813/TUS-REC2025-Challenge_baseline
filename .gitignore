@@ -16,6 +16,8 @@ submission/data
 *.tar
 md5sums.txt
 *.zip
+check_ddfs.py
+saved_ddf/
 results/
 
 

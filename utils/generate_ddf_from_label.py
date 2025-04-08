@@ -15,11 +15,6 @@ class generate_ddf_from_label():
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = self.tform_calib_scale.to(self.device),self.tform_calib_R_T.to(self.device), self.tform_calib.to(self.device)
         # image points coordinates in image coordinate system, all pixel points
         self.image_points = reference_image_points([h, w],[h, w]).to(self.device)
-        
-        # delete ============================================================
-        # image points coordinates in image coordinate system, four corner pixel points
-        self.image_points_corner = reference_image_points([h, w],2).to(self.device)
-        #  ============================================================
 
     def calculate_GT_DDF(self,frames,tforms,landmark):
         # calculate DDFs of ground truth - label
@@ -32,19 +27,8 @@ class generate_ddf_from_label():
         
         # # Global displacement vectors for pixel reconstruction and landmark reconstruction
         labels_global_allpts_DDF,labels_global_landmark_DDF = cal_global_ddfs(transformation_global.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
-        # Global displacement vectors for landmark reconstruction
-        labels_global_landmark_DDF_test = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
         # Local displacement vectors for pixel reconstruction and landmark reconstruction
         labels_local_allpts_DDF,labels_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
-        # Local displacement vectors for landmark reconstruction
-        labels_local_landmark_DDF_test = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
-
-        # # delete ============================================================
-        # Global displacement vectors for pixel reconstruction and landmark reconstruction
-        labels_global_allpts_DDF1,labels_global_landmark_DDF1 = cal_global_ddfs1(transformation_global,self.tform_calib_scale,self.image_points_corner,landmark)
-        # Local displacement vectors for pixel reconstruction and landmark reconstruction
-        labels_local_allpts_DDF1,labels_local_landmark_DDF1 = cal_local_ddfs1(transformation_local,self.tform_calib_scale,self.image_points_corner,landmark)
-        # # ============================================================
 
         return labels_global_allpts_DDF,labels_global_landmark_DDF,labels_local_allpts_DDF,labels_local_landmark_DDF
 
