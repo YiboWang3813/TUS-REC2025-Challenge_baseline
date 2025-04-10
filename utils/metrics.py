@@ -2,7 +2,7 @@
 import numpy as np
 
 def cal_dist(label,pred,mode = 'all'):
-    # calculate distance between ground truth and prediction coordinates
+    # calculate distance between ground truth and predicted coordinates
 
     if mode == 'all':
         dist = np.sqrt(((label-pred)**2).sum(axis=1)).mean()

@@ -1,6 +1,6 @@
 
 # This script is an example to show how to generate the 4 DDFs.
-# The DDFs could further be used to format loss functions.
+# The DDFs could further be used in loss functions.
 
 import os
 import torch
@@ -13,12 +13,13 @@ from utils.predict_ddfs import predict_ddfs
 from utils.plot_scans import plot_scans
 from utils.metrics import cal_dist
 
+# load configs
 saved_model_path = os.getcwd()+ '/results/seq_len2__efficientnet_b1__lr0.0001__pred_type_parameter__label_type_point'
 _,opt = load_config(saved_model_path+'/config.txt')
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_ids
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# create testset loader
+# test set loader
 opt.FILENAME_TEST=opt.FILENAME_TEST+'.json'
 dset_test = Dataset.read_json(os.path.join(os.getcwd(),opt.SAVE_PATH,opt.FILENAME_TEST),num_samples = -1)
 

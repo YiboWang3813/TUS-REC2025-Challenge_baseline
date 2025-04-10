@@ -1,9 +1,5 @@
-# Loss function and metrics
+# metrics
 
-from utils.transform import TransformAccumulation
-from utils.transform import LabelTransform
-import numpy as np
-from itertools import combinations
 
 class PointDistance:
     # calculate the distance between two sets of points

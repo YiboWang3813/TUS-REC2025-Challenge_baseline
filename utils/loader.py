@@ -125,7 +125,7 @@ class Dataset():
 
         scans = [f for f in os.listdir(os.path.join(self.data_path, self.subs[indices[0]])) if f.endswith(".h5")]
         if len(scans) != 2:
-            raise("Each subjects should have 2 scans")
+            raise("Each subject should have 2 scans")
         fn_mha=sorted(scans)
 
         h5file = h5py.File(os.path.join(os.getcwd(),self.data_path,self.subs[indices[0]],fn_mha[indices[1]]), 'r')
@@ -133,7 +133,7 @@ class Dataset():
         tforms = h5file['tforms']
         scan_name = fn_mha[indices[1]][:-3]
         
-        if self.num_samples == -1:  # sample all available frames, for validation
+        if self.num_samples == -1:  # sample all available frames
             return frames[()],tforms[()],indices,scan_name
 
         else:
@@ -178,11 +178,4 @@ class Dataset():
                 sample_range=obj['sample_range'],
                 indices_in_use = [tuple(ids) for ids in obj['indices_in_use']], # convert to tuples from json string
                 )
-   
-   
-   
-
-   
-   
         
-            

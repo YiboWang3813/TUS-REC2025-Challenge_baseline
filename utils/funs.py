@@ -1,5 +1,3 @@
-# Functions used during training
-
 import torch
 import os
 import argparse
@@ -33,7 +31,7 @@ def type_dim(label_pred_type, num_points=None, num_pairs=1):
 
 def save_best_network(opt, model, epoch_label, running_loss_val, running_dist_val, val_loss_min, val_dist_min):
     '''
-    :param opt: parameters of this projects
+    :param opt: config
     :param model: model that need to be saved
     :param epoch_label: current epoch
     :param running_loss_val: validation loss of this epoch
@@ -44,6 +42,7 @@ def save_best_network(opt, model, epoch_label, running_loss_val, running_dist_va
     '''
 
     file_name = os.path.join(os.getcwd(),opt.SAVE_PATH, 'val_results', 'best_model_epoch.txt')
+    
     if running_loss_val < val_loss_min:
         val_loss_min = running_loss_val
         with open(file_name, 'a') as opt_file:
@@ -108,6 +107,7 @@ def save_model(model,epoch,opt):
                
         torch.save(model.state_dict(), os.path.join(os.getcwd(),opt.SAVE_PATH, 'saved_model', 'model_epoch%08d' % epoch))
         print('Model parameters saved.')
+        # remove the oldest model
         list_dir = os.listdir(os.path.join(os.getcwd(),opt.SAVE_PATH, 'saved_model'))
         saved_models = [i for i in list_dir if i.startswith('model_epoch')]
         if len(saved_models)>4:

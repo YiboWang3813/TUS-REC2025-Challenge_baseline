@@ -1,19 +1,21 @@
-# This script contains four functions, which can be used to generate required DDFs, using transformations
+# This script contains two functions, which can be used to generate 4 DDFs, using transformations
 
 import torch
-import numpy as np
 
 def cal_global_ddfs(transformation_global,tform_calib_scale,image_points,landmark,w = 640,h = 480):
     """
-    This function generates global DDF for all pixels in a scan, using global transformations
+    This function generates global DDF for all pixels and landmarks in a scan, using global transformations
 
     Args:
         transformation_global (torch.Tensor): shape=(N-1, 4, 4), global transformations for each frame in the scan; each transformation denotes the transformation from the current frame to the first frame
         tform_calib_scale (torch.Tensor): shape=(4, 4), scale from image coordinate system (in pixel) to image coordinate system (in mm)
-        image_points (torch.Tensor): shape=(4, 307200), point coordinate for all pixels, in image coordinate system (in pixel) 
-        landmark (torch.Tensor): shape=(100, 3), coordinates of landmark points in image coordinate system (in pixel), starting from 1
+        image_points (torch.Tensor): shape=(4, 307200), point coordinates for all pixels, in image coordinate system (in pixel) 
+                                                        The coordinates defination of the 307200 points can be found in the function "reference_image_points" in utils/plot_functions.py
+        landmark (torch.Tensor): shape=(100, 3), coordinates of landmarks in image coordinate system (in pixel).
+                                                 The first dimension starts from 0, and the second and third dimensions start from 1, which is designed to be consistent with the calibration process.
         w (int): width of the image
-        h (int): height of the image   
+        h (int): height of the image  
+
     Returns:
         global_allpts_DDF (numpy.ndarray): shape=(N-1, 3, 307200), global DDF for all pixels, where N-1 is the number of frames in that scan (excluding the first frame)
         global_landmark_DDF (numpy.ndarray): shape=(3, 100), global DDF for landmark 
@@ -33,15 +35,18 @@ def cal_global_ddfs(transformation_global,tform_calib_scale,image_points,landmar
 
 def cal_local_ddfs(transformation_local,tform_calib_scale,image_points,landmark,w = 640,h = 480):
     """
-    This function generates local DDF for all pixels in a scan, using local transformations
+    This function generates local DDF for all pixels and landmarks in a scan, using local transformations
 
     Args:
         transformation_local (torch.Tensor): shape=(N-1, 4, 4), local transformations for each frame in the scan; each transformation denotes the transformation from the current frame to the previous frame
         tform_calib_scale (torch.Tensor): shape=(4, 4), scale from image coordinate system (in pixel) to image coordinate system (in mm) 
-        image_points (torch.Tensor): shape=(4, 307200), point coordinate for all pixels, in image coordinate system (in pixel) 
-        landmark (torch.Tensor): shape=(100, 3), coordinates of landmark points in image coordinate system (in pixel), starting from 1
+        image_points (torch.Tensor): shape=(4, 307200), point coordinates for all pixels, in image coordinate system (in pixel) 
+                                                        The coordinates defination of the 307200 points can be found in the function "reference_image_points" in utils/plot_functions.py
+        landmark (torch.Tensor): shape=(100, 3), coordinates of landmarks in image coordinate system (in pixel).
+                                                 The first dimension starts from 0, and the second and third dimensions start from 1, which is designed to be consistent with the calibration process.
         w (int): width of the image
         h (int): height of the image 
+
     Returns:
         local_allpts_DDF (numpy.ndarray): shape=(N-1, 3, 307200), local DDF for all pixels, where N-1 is the number of frames in that scan (excluding the first frame)  
         local_landmark_DDF (numpy.ndarray): shape=(3, 100), local DDF for landmarks

@@ -1,6 +1,5 @@
 # Functions used during ground truth DDF generation
 
-import os
 import torch
 from utils.transform import LabelTransform
 from utils.plot_functions import reference_image_points,read_calib_matrices,data_pairs_global,data_pairs_local
@@ -10,9 +9,10 @@ class generate_ddf_from_label():
       
     def __init__(self,data_path_calib,device,w = 640,h = 480):
         self.device = device
+        # load calibration matrix
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = read_calib_matrices(data_path_calib)
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = self.tform_calib_scale.to(self.device),self.tform_calib_R_T.to(self.device), self.tform_calib.to(self.device)
-        # image points coordinates in image coordinate system, all pixel points
+        # image points coordinates in image coordinate system (in pixel), all pixel points
         self.image_points = reference_image_points([h, w],[h, w]).to(self.device)
 
     def calculate_GT_DDF(self,frames,tforms,landmark):
@@ -24,7 +24,7 @@ class generate_ddf_from_label():
         # generate global and local transformations, based on recorded transformations (from tracker space to camera space) from NDI tracker. 
         transformation_global,transformation_local = self.get_global_local_transformations(tforms,tforms_inv)
         
-        # # Global displacement vectors for pixel reconstruction and landmark reconstruction
+        # Global displacement vectors for pixel reconstruction and landmark reconstruction
         labels_global_allpts_DDF,labels_global_landmark_DDF = cal_global_ddfs(transformation_global.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Local displacement vectors for pixel reconstruction and landmark reconstruction
         labels_local_allpts_DDF,labels_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)

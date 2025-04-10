@@ -1,8 +1,7 @@
-# Networks
+# Network
 
 import torch
 from torchvision.models import efficientnet_b1
-import torch
 
 def build_model(opt,in_frames, pred_dim):
     

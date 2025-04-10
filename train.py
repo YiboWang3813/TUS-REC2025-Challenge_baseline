@@ -1,4 +1,5 @@
 # Training script 
+
 import os
 import torch
 import json
@@ -62,12 +63,12 @@ val_loader = torch.utils.data.DataLoader(
 
 ## load calibration metric
 tform_calib_scale,tform_calib_R_T, tform_calib = read_calib_matrices(os.path.join(os.getcwd(),opt.FILENAME_CALIB))
-# image points coordinates on image coordinate system
+# Coordinates of four corner points in image coordinate system (in pixel)
 image_points = reference_image_points(dset_train[0][0].shape[1:],2).to(device)
-# hyper-parameter for prediction and label
+# dimension for prediction and label
 pred_dim = type_dim(opt.PRED_TYPE, image_points.shape[1], data_pairs.shape[0])
 label_dim = type_dim(opt.LABEL_TYPE, image_points.shape[1], data_pairs.shape[0])
-# transform label and prediction into another format, e.g., transform transformation matrix into points
+# transform label into another type, e.g., transform 4*4 transformation matrix into points
 transform_label = LabelTransform(
     opt.LABEL_TYPE,
     pairs=data_pairs,
@@ -76,7 +77,7 @@ transform_label = LabelTransform(
     tform_image_mm_to_tool=tform_calib_R_T.to(device),
     tform_image_pixel_to_mm = tform_calib_scale.to(device)
     )
-
+# transform prediction into the type of label
 transform_prediction = PredictionTransform(
     opt.PRED_TYPE,
     opt.LABEL_TYPE,
@@ -86,6 +87,7 @@ transform_prediction = PredictionTransform(
     tform_image_mm_to_tool=tform_calib_R_T.to(device),
     tform_image_pixel_to_mm = tform_calib_scale.to(device)
     )
+# transform into points, from the type of label
 transform_into_points = PointTransform(
     label_type=opt.LABEL_TYPE,
     image_points=image_points,
@@ -94,7 +96,7 @@ transform_into_points = PointTransform(
     tform_image_pixel_to_mm = tform_calib_scale.to(device)
     )
 
-## network
+# network
 model = build_model(
     opt,
     in_frames = opt.NUM_SAMPLES,
@@ -102,7 +104,7 @@ model = build_model(
     ).to(device)
 
 if opt.retrain:
-    # retrain the model from previous epoch
+    # retrain model from previous epoch
     model.load_state_dict(torch.load(os.path.join(os.getcwd(),opt.SAVE_PATH,'saved_model', 'model_epoch'+str(opt.retrain_epoch)),map_location=torch.device(device)))
 else:
     # load model weights trained using data of TUS-REC2024
@@ -188,7 +190,7 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
         save_model(model,epoch,opt)
         # save best validation model
         val_loss_min, val_dist_min = save_best_network(opt, model, epoch, epoch_loss_val, epoch_dist_val.mean(), val_loss_min, val_dist_min)
-        # add to tensorboard
+        # add to tensorboard and save to txt
         loss_dists = {'train_epoch_loss': train_epoch_loss, 'train_epoch_dist': train_epoch_dist,'val_epoch_loss':epoch_loss_val,'val_epoch_dist':epoch_dist_val}
         add_scalars(writer, epoch, loss_dists)
         write_to_txt(opt, epoch, loss_dists)

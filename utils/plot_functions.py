@@ -1,8 +1,6 @@
-# Functions used during plotting
 
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 
 def reference_image_points(image_size, density=2):
     """
@@ -26,18 +24,17 @@ def reference_image_points(image_size, density=2):
     return image_points
 
 def data_pairs_global(num_frames):
-    # obtain the data_pairs to compute the tarnsfomration between frames and the reference (first) frame
+    # obtain the data pairs to compute the tarnsfomration between frames and the reference (first) frame
     
     return torch.tensor([[0,n0] for n0 in range(num_frames)])
 
 def data_pairs_local(num_frames):
-    # obtain the data_pairs to compute the tarnsfomration between frames and the reference (the immediate previous) frame
+    # obtain the data pairs to compute the tarnsfomration between frames and the reference (the immediate previous) frame
     
     return torch.tensor([[n0,n0+1] for n0 in range(num_frames)])
 
 def read_calib_matrices(filename_calib):
     # read the calibration matrices from the csv file
-    # T{image->tool} = T{image_mm -> tool} * T{image_pix -> image_mm}}
     tform_calib = np.empty((8,4), np.float32)
     with open(filename_calib,'r') as csv_file:
         txt = [i.strip('\n').split(',') for i in csv_file.readlines()]

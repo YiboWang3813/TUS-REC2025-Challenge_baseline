@@ -1,4 +1,4 @@
-# Functions used during DDF generation
+# Functions used during prediction DDF generation
 
 import os,json
 import torch
@@ -19,10 +19,10 @@ class Prediction():
         self.data_pairs=torch.tensor(data_pairs).to(self.device)
         self.model_name = model_name
         self.model_path = model_path
+        # load calibration matrix
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = read_calib_matrices(data_path_calib)
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = self.tform_calib_scale.to(self.device),self.tform_calib_R_T.to(self.device), self.tform_calib.to(self.device)
-
-        # image points coordinates in image coordinate system, all pixel points
+        # point coordinates in image coordinate system (in pixel), all pixel points
         self.image_points = reference_image_points([h, w],[h, w]).to(self.device)
         
         # transform prediction into 4*4 transformation matrix
@@ -34,7 +34,7 @@ class Prediction():
             tform_image_mm_to_tool=self.tform_calib_R_T,
             tform_image_pixel_to_mm = self.tform_calib_scale
             )
-        # accumulate transformation
+        # accumulate transformations
         self.transform_accumulation = TransformAccumulation(
             image_points=self.image_points,
             tform_image_to_tool=self.tform_calib,
@@ -55,12 +55,12 @@ class Prediction():
 
 
     def generate_prediction_DDF(self, frames,landmark):
-        # calculate DDFs
+
         frames = torch.tensor(frames)[None,...].to(self.device)
         frames = frames/255
         landmark = torch.from_numpy(landmark)
 
-        # predict global and local transformations, from model
+        # predict global and local transformations
         transformation_global, transformation_local = self.cal_pred_transformations(frames)
 
         # Global displacement vectors for pixel reconstruction and landmark reconstruction
@@ -72,7 +72,7 @@ class Prediction():
 
     def cal_pred_transformations(self,frames):
         """
-        predict global and local transformations from model
+        predict global and local transformations
 
         Args:
             frames (torch.Tensor): shape=(1, N, H, W), all frames in the scan, where N denotes the number of frames in the scan, H and W denote the height and width of a frame. 
@@ -83,7 +83,7 @@ class Prediction():
 
         """
 
-        # NOTE: when NUM_SAMPLES is larger than 2, the transformations of the last (NUM_SAMPLES-2) frames will not be generated
+        # NOTE: when NUM_SAMPLES is larger than 2, the transformations of the last several frames will not be generated
         # local transformation, i.e., transformation from current frame to the immediate previous frame
         transformation_local = torch.zeros(frames.shape[1]-1,4,4)
         # global transformation, i.e., transformation from current frame to the first frame
@@ -106,7 +106,7 @@ class Prediction():
                 transformation_global[idx_f0] = prev_transf
 
             idx_f0 += interval_pred
-            # NOTE: Due to this break, when NUM_SAMPLES is larger than 2, the transformations of the last (NUM_SAMPLES-2) frames will not be generated
+            # NOTE: Due to this break, when NUM_SAMPLES is larger than 2, the transformations of the last several frames will not be generated
             if (idx_f0 + self.parameters['NUM_SAMPLES']) > frames.shape[1]:
                 break
 
@@ -119,11 +119,10 @@ class Prediction():
         return transformation_global,transformation_local
    
     def type_dim(self,label_pred_type, num_points=None, num_pairs=1):
-        # return the dimension of the label or prediction, based on the type of label or prediction
         type_dim_dict = {
             "transform": 12,
             "parameter": 6,
             "point": num_points*3,
             "quaternion": 7
         }
-        return type_dim_dict[label_pred_type] * num_pairs  # num_points=self.image_points.shape[1]), num_pairs=self.pairs.shape[0]
+        return type_dim_dict[label_pred_type] * num_pairs 

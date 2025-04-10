@@ -8,7 +8,7 @@ Use left-multiplication:
     T{image->tool} is the calibration matrix: T_calib
     pts{tool} = T{image->tool} * pts{image}
     pts{world} = T{image->world} * pts{image}
-        where pts{image1} are four (corners) or five (and centre) image points in the image coordinate system.
+        where pts{image} are four (corners) image points in the image coordinate system.
 
 The ImagePointTransformLoss 
     - a pair of "past" and "pred" images, image0 and image1
@@ -44,12 +44,11 @@ class LabelTransform():
         tform_image_pixel_to_mm = None
         ):        
         """
-        :param label_type: {"point", "parameter"}
-        :param pairs: data pairs, between which the transformations are constructed, returned from pair_samples
-        :param image_points: 2-by-num or 3-by-num in pixel, used for computing loss
-        :param tform_image_to_tool: transformation from image coordinates to tool coordinates, usually obtained from calibration
-        :param tform_image_mm_to_tool: transformation from image coordinates (mm) to tool coordinates
-        :param tform_image_pixel_to_mm: transformation from image coordinates (pixel) to image coordinates (mm)
+        :param label_type: {"point", "parameter", "transform"}
+        :param pairs: data pairs, between which the transformations are constructed
+        :param tform_image_to_tool: transformation from image coordinate system to tool coordinate system, usually obtained from calibration
+        :param tform_image_mm_to_tool: transformation from image coordinate system (in mm) to tool coordinate system
+        :param tform_image_pixel_to_mm: transformation from image coordinate system (in pixel) to image coordinate system (in mm)
         """
 
         self.label_type = label_type
@@ -86,7 +85,7 @@ class LabelTransform():
  
     def to_transform_t2t(self, tforms, tforms_inv):
         # the label includes the rigid part of calibration matrix, so the transformation is from image(mm) to image(mm), and the final transformed points is in mm, rather in pixel
-        # such that the label is Orthogonal Matrix, and then the label could be converted to 6DOF parameter using functions in pytorch3d
+        # such that the label is Orthogonal Matrix, and the label could be converted to 6DOF parameter using functions in pytorch3d
         if tforms_inv is None:
             tforms_inv = torch.linalg.inv(tforms)
         
@@ -122,10 +121,9 @@ class PredictionTransform():
         :param pred_type = {"transform", "parameter", "point", "quaternion"}
         :param label_type = {"point", "parameter", "transform"}
         :param num_pairs: number of data pairs
-        :param image_points: 2-by-num or 3-by-num in pixel, used for computing loss
-        :param tform_image_to_tool: transformation from image coordinates to tool coordinates, usually obtained from calibration
-        :param tform_image_mm_to_tool: transformation from image coordinates (mm) to tool coordinates
-        :param tform_image_pixel_to_mm: transformation from image coordinates (pixel) to image coordinates (mm)
+        :param tform_image_to_tool: transformation from image coordinate system to tool coordinate system, usually obtained from calibration
+        :param tform_image_mm_to_tool: transformation from image coordinate system (in mm) to tool coordinate system
+        :param tform_image_pixel_to_mm: transformation from image coordinate system (in pixel) to image coordinate system (in mm)
         """
 
         self.pred_type = pred_type
@@ -241,7 +239,6 @@ class PredictionTransform():
         return params
     
     def parameter_to_point(self,params):
-        # 'ZYX'
         _tforms = self.param_to_transform(params)
 
         return torch.matmul(_tforms, torch.matmul(self.tform_image_pixel_to_mm, self.image_points))[:,:,0:3,:]  # [batch,num_pairs,(x,y,z,1),num_image_points]
@@ -290,6 +287,7 @@ class TransformAccumulation:
         tform_image_mm_to_tool=None,
         tform_image_pixel_to_image_mm=None
         ):
+
         self.image_points = image_points
         self.tform_image_to_tool = tform_image_to_tool
         self.tform_image_mm_to_tool = tform_image_mm_to_tool
@@ -309,7 +307,6 @@ class TransformAccumulation:
         tform_img2_mm_to_img1_mm = tform_2_to_1
         # transformation from image2 to image0 in mm
         tform_img2_mm_to_img0_mm = torch.matmul(tform_img1_mm_to_img0_mm,tform_img2_mm_to_img1_mm)
-        # return point coordinates in image0 in mm, and the transformation from image2 to image0 in mm
         return tform_img2_mm_to_img0_mm
 
 
@@ -353,15 +350,10 @@ class PointTransform:
         return torch.matmul(_tforms, torch.matmul(self.tform_image_pixel_to_mm,self.image_points))[:,:,0:3,:]
     
     def parameter_to_point(self,params):
-        # 'ZYX'
         _tforms = self.param_to_transform(params)
-        # the same as the following function
-        # _tforms = pytorch3d.transforms.euler_angles_to_matrix(params, 'ZYX')
-
         return torch.matmul(_tforms, torch.matmul(self.tform_image_pixel_to_mm,self.image_points))[:,:,0:3,:]  # [batch,num_pairs,(x,y,z,1),num_image_points]
     
     def param_to_transform(self,params):
-        # params: (batch,ch,6), "ch": num_pairs, "6":rx,ry,rz,tx,ty,tz
         matrix = pytorch3d.transforms.euler_angles_to_matrix(params[...,0:3], 'ZYX')
         transform = torch.cat((matrix,params[...,3:][...,None]),axis=3)
         last_rows = torch.cat((torch.zeros_like(matrix[0,0,:,0]),torch.ones_like(params[0,0,0:1])),axis=0).expand(list(matrix.shape[0:2])[0],list(matrix.shape[0:2])[1],1,4)
@@ -424,7 +416,6 @@ class Transforms:
         return transform
     
     def param_to_transform(self,params):
-        # params: (batch,ch,6), "ch": num_pairs, "6":rx,ry,rz,tx,ty,tz
         matrix = pytorch3d.transforms.euler_angles_to_matrix(params[...,0:3], 'ZYX')
         transform = torch.cat((matrix,params[...,3:][...,None]),axis=3)
         last_rows = torch.cat((torch.zeros_like(matrix[0,0,:,0]),torch.ones_like(params[0,0,0:1])),axis=0).expand(list(matrix.shape[0:2])[0],list(matrix.shape[0:2])[1],1,4)

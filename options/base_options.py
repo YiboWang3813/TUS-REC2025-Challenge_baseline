@@ -12,7 +12,7 @@ class BaseOptions():
     def initialize(self):
         self.parser.add_argument('--DATA_PATH', type=str, default='data/frames_transfs', help='foldername of dataset path')
         self.parser.add_argument('--FILENAME_CALIB', type=str, default='data/calib_matrix.csv',help='dataroot of calibration matrix')
-        self.parser.add_argument('--LANDMARK_PATH', type=str, default='data/landmarks', help='foldername of label path for landmark')
+        self.parser.add_argument('--LANDMARK_PATH', type=str, default='data/landmarks', help='foldername of path for landmark')
         self.parser.add_argument('--gpu_ids', type=str, default='0', help='gpu id: e.g., 0,1,2...')
         self.initialized = True
 
@@ -27,7 +27,6 @@ class BaseOptions():
         print('----------Option----------')
         for k, v in sorted(args.items()):
             print('%s: %s' % (str(k), str(v)))
-            print('\n')
         print('----------Option----------')
 
         # create saved result path
@@ -44,11 +43,11 @@ class BaseOptions():
         if not os.path.exists(os.path.join(os.getcwd(),self.opt.SAVE_PATH, 'val_results')):
             os.makedirs(os.path.join(os.getcwd(),self.opt.SAVE_PATH, 'val_results'))
 
+        # save configurations
         file_name = os.path.join(self.opt.SAVE_PATH, 'config.txt')
         with open(file_name, 'a') as opt_file:
-            # opt_file.write('------------ Options -------------\n')
             for k, v in sorted(args.items()):
                 opt_file.write('%s: %s' % (str(k), str(v)))
                 opt_file.write('\n')
-            # opt_file.write('------------ Options -------------\n')
+        
         return self.opt
