@@ -157,32 +157,32 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
     if epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS, opt.val_fre):
 
         model.train(False)
-
         epoch_loss_val = 0
         epoch_dist_val = 0
-        for step, (fr_val, tf_val,_,_) in enumerate(val_loader):
+        with torch.no_grad():
+            for step, (fr_val, tf_val,_,_) in enumerate(val_loader):
 
-            fr_val, tf_val = fr_val.to(device), tf_val.to(device)
-            tf_val_inv = torch.linalg.inv(tf_val)
-            # transform label based on label type
-            la_val = transform_label(tf_val, tf_val_inv)
-            fr_val = fr_val/255
+                fr_val, tf_val = fr_val.to(device), tf_val.to(device)
+                tf_val_inv = torch.linalg.inv(tf_val)
+                # transform label based on label type
+                la_val = transform_label(tf_val, tf_val_inv)
+                fr_val = fr_val/255
 
-            out_val = model(fr_val)
-            # transform prediction
-            pr_val = transform_prediction(out_val)
-            # calculate loss and metric
-            loss_val = criterion(pr_val, la_val)
-            pr_val_pts = transform_into_points(pr_val)
-            la_val_pts = transform_into_points(la_val)
-            dist_val = metrics(pr_val_pts, la_val_pts).detach()
+                out_val = model(fr_val)
+                # transform prediction
+                pr_val = transform_prediction(out_val)
+                # calculate loss and metric
+                loss_val = criterion(pr_val, la_val)
+                pr_val_pts = transform_into_points(pr_val)
+                la_val_pts = transform_into_points(la_val)
+                dist_val = metrics(pr_val_pts, la_val_pts).detach()
 
-            epoch_loss_val += loss_val.item()
-            epoch_dist_val += dist_val
+                epoch_loss_val += loss_val.item()
+                epoch_dist_val += dist_val
 
 
-        epoch_loss_val /= (step+1)
-        epoch_dist_val /= (step+1)
+            epoch_loss_val /= (step+1)
+            epoch_dist_val /= (step+1)
 
         # print loss information on terminal
         print_info(epoch,epoch_loss_val,epoch_dist_val,opt,'val')

@@ -33,7 +33,7 @@ class generate_ddf_from_label():
 
     def get_global_local_transformations(self,tforms,tforms_inv):
         """
-         This function generates global and local transformations for each frame in the scan
+        This function generates global and local transformations for each frame in the scan
 
         Args:
             tforms (torch.Tensor): shape=(1, N, 4, 4), transformations from NDI tracker, from tracker tool space to camera space; where N is the number of frames in the scan.

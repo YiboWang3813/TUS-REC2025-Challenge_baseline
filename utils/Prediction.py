@@ -94,9 +94,9 @@ class Prediction():
         Pair_index = 0 # select which pair of prediction to use
         interval_pred = torch.squeeze(self.data_pairs[Pair_index])[1] - torch.squeeze(self.data_pairs[Pair_index])[0]
 
-        while True:  
-            frames_sub = frames[:,idx_f0:idx_f0 + self.parameters['NUM_SAMPLES'], ...]
-            with torch.no_grad():
+        while True:
+            with torch.no_grad():  
+                frames_sub = frames[:,idx_f0:idx_f0 + self.parameters['NUM_SAMPLES'], ...]
                 outputs = self.model(frames_sub)
                 # transform prediction into 4*4 transformtion matrix, to be accumulated
                 preds_transf = self.transforms(outputs)[0,Pair_index,...] 
