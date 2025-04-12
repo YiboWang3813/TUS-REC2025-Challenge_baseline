@@ -5,6 +5,7 @@
 import os
 import torch
 import h5py
+import time
 from utils.loader import Dataset
 from utils.plot_functions import *
 from utils.funs import *
@@ -24,7 +25,7 @@ opt.FILENAME_TEST=opt.FILENAME_TEST+'.json'
 dset_test = Dataset.read_json(os.path.join(os.getcwd(),opt.SAVE_PATH,opt.FILENAME_TEST),num_samples = -1)
 
 # save results
-GPE,GLE,LPE,LLE=[],[],[],[]
+GPE,GLE,LPE,LLE,time_elapsed=[],[],[],[],[]
 saved_folder_test = os.path.join(os.getcwd(),opt.SAVE_PATH, 'testing','testing_test_results')
 if not os.path.exists(saved_folder_test):
     os.makedirs(saved_folder_test)
@@ -41,7 +42,11 @@ for scan_index in range(len(dset_test)):
     labels_GP,labels_GL,labels_LP,labels_LL = generate_GT_ddf.calculate_GT_DDF(frames,tforms,landmark) 
 
     # generate four predicted DDFs
+    start = time.time()
     pred_GP,pred_GL,pred_LP,pred_LL = predict_ddfs(frames,landmark,opt.FILENAME_CALIB,device)
+    torch.cuda.synchronize()
+    end = time.time()
+    time_elapsed.append(end - start)
 
     # plot scan     
     plot_scans(frames,scan_name,indices,labels_GP,pred_GP,saved_folder_test,generate_GT_ddf.tform_calib_scale.cpu(),generate_GT_ddf.image_points.cpu())
@@ -56,11 +61,12 @@ for scan_index in range(len(dset_test)):
 
 
 # save results into .h5 file
-GPE,GLE,LPE,LLE = np.array(GPE),np.array(GLE),np.array(LPE),np.array(LLE)
+GPE,GLE,LPE,LLE,time_elapsed = np.array(GPE),np.array(GLE),np.array(LPE),np.array(LLE),np.array(time_elapsed)
 metrics = h5py.File(os.path.join(opt.SAVE_PATH,"metrics.h5"),'a')
 metrics.create_dataset('GPE', len(GPE), dtype=GPE.dtype, data=GPE)
 metrics.create_dataset('GLE', len(GLE), dtype=GLE.dtype, data=GLE)
 metrics.create_dataset('LPE', len(LPE), dtype=LPE.dtype, data=LPE)
 metrics.create_dataset('LLE', len(LLE), dtype=LLE.dtype, data=LLE)
+metrics.create_dataset('time_elapsed', len(time_elapsed), dtype=time_elapsed.dtype, data=time_elapsed)
 metrics.flush()
 metrics.close()
