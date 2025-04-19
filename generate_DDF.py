@@ -44,12 +44,11 @@ for scan_index in range(len(dset_test)):
     # generate four predicted DDFs
     start = time.time()
     pred_GP,pred_GL,pred_LP,pred_LL = predict_ddfs(frames,landmark,opt.FILENAME_CALIB,device)
-    torch.cuda.synchronize()
     end = time.time()
     time_elapsed.append(end - start)
 
     # plot scan     
-    plot_scans(frames,scan_name,indices,labels_GP,pred_GP,saved_folder_test,generate_GT_ddf.tform_calib_scale.cpu(),generate_GT_ddf.image_points.cpu())
+    # plot_scans(frames,scan_name,indices,labels_GP,pred_GP,saved_folder_test,generate_GT_ddf.tform_calib_scale.cpu(),generate_GT_ddf.image_points.cpu())
     
     # calculate metric
     GPE.append(cal_dist(labels_GP,pred_GP,'all'))
