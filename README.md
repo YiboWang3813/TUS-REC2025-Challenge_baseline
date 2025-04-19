@@ -71,7 +71,7 @@ The rigid transformation from the $i^{th}$ frame to the $j^{th}$ frame (in mm), 
 
 <!-- <a id="transformation"></a> -->
 $$
-T_{j\leftarrow i}= T_{rotation}^{-1} \cdot T_{j\leftarrow i}^{tool} \cdot T_{rotation} (1)
+T_{j\leftarrow i}= T_{rotation}^{-1} \cdot T_{j\leftarrow i}^{tool} \cdot T_{rotation}       (1)
 $$
 <!-- , 1 \leq i<j \leq M  -->
 
