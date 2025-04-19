@@ -70,30 +70,29 @@ Fig. 2. The relationship among three coordinate systems: the image coordinate sy
 The rigid transformation from the $i^{th}$ frame to the $j^{th}$ frame (in mm), $T_{j\leftarrow i}$, can be obtained using [Eq. 1](#transformation), where $T_{j\leftarrow i}^{tool}$ denotes the transformation between $i^{th}$ tacker tool to the $j^{th}$ track tool and $T_{rotation}$ represents spatial calibration from image coordinate system (in mm) to tracking tool coordinate system.
 
 <a id="transformation"></a>
-$
+
 \begin{equation}
 T_{j\leftarrow i}= T_{rotation}^{-1} \cdot T_{j\leftarrow i}^{tool} \cdot T_{rotation} \tag{1}
 \end{equation}
-$
+
 <!-- , 1 \leq i<j \leq M  -->
 
 In general, prior studies have formulated freehand US reconstruction as the estimation of the transformation between two frames in an US sequence. This estimation relies on a function $f$, which serves as the core of freehand US reconstruction, as expressed in [Eq. 2](#freehandUS): 
 
 <a id="freehandUS"></a>
-$
+
 \begin{equation}
 T_{j\leftarrow i} \approx f(I_i, I_j) \tag{2}
 \end{equation}
-$
+
 
 Typically, adjacent frames are used in [Eq. 2](#freehandUS). The transformation from $i^{th}$ frame to the first frame $T_i$ can be computed by recursively multiplying the previously estimated relative transformations, as shown in [Eq. 3](#chain-multiplying):
 
 <a id="chain-multiplying"></a>
-$
 \begin{equation}
 T_i= T_{1\leftarrow 2} \cdot T_{2\leftarrow 3}  \cdots  T_{i-1\leftarrow i} \tag{3}
 \end{equation}
-$
+
 
 Moreover, [Eq. 3](#chain-multiplying) demonstrates that estimation errors can propagate and accumulate throughout the chain, ultimately resulting in trajectory drift.
 
@@ -102,11 +101,11 @@ The first frame is chosen as the reference. As a result, only the relative trans
 For any pixel $x$ in $i^{th}$ frame with coordinates $p_x$ in image coordinate system (in pixel) of frame $i$, the coordinates in image coordinate system (in mm) of frame 1, $P_x$, can be obtained using [Eq. 4](#coordinate).
 
 <a id="coordinate"></a>
-$
+
 \begin{equation}
 P_x = T_i \cdot T_{scale} \cdot p_x \tag{4}
 \end{equation}
-$
+
 where $T_{scale}$ denotes the scaling from pixel to mm.
 <!-- where $T_i$ denotes the transformation from $i^{th}$ frame to the first frame. -->
 
@@ -124,7 +123,7 @@ From the results of TUS-REC2024, we observed that the reconstruction performance
 
 ## Dataset
 
-The data in this challenge is acquired from both left and right forearms of 85 volunteers, acquired at University College London, London, U.K, with a racial-, gender-, age-diverse subject cohort. [Fig. 3](#figure3) shows the equipment setting during acquisition. No specific exclusion criteria as long as the participants do not have allergies or skin conditions which may be exacerbated by US gel. All scanned forearms are in good health. The data is randomly split into training, validation, and test sets of 50, 3, and 32 subjects (100, 6, 64 scans; ~163k, ~9k, ~100k frames), respectively.
+The data in this challenge is acquired from both left and right forearms of 85 volunteers, acquired at University College London, London, U.K, with a racial-, gender-, age-diverse subject cohort. [Fig. 3](#figure3) shows the equipment setting during acquisition. No specific exclusion criteria as long as the participants do not have allergies or skin conditions which may be exacerbated by US gel. All scanned forearms are in good health. The data is randomly split into train, validation, and test sets of 50, 3, and 32 subjects (100, 6, 64 scans; ~163k, ~9k, ~100k frames), respectively.
 
 <div align=center>
   <a 
@@ -157,7 +156,7 @@ Your browser does not support the video tag.
 
 </video>
 
-### Training Data Structure: 
+### Train Data Structure: 
 ```bash
 
 Freehand_US_data_train_2025/ 
@@ -248,7 +247,9 @@ mkdir data
 unzip Freehand_US_data_train_2025.zip -d ./data
 ```
 
-#### 6. Make sure the data folder structure is the same as <a href="TBA" target="_blank">Training Data Structure</a> above.
+#### 6. Make sure the data folder structure is the same as [Train Data Structure](#train-data-structure) above.
+
+<!-- <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline?tab=readme-ov-file#training-data-structure" target="_blank">Training Data Structure</a> above. -->
 
 #### 7. Train a model. 
 ``` bash
@@ -266,7 +267,7 @@ python3 generate_DDF.py
 >     * `LL`: Local displacement vectors for landmarks, in mm. The DDF should be in numpy array format with a shape of [3,100], where 100 is the number of landmarks in a scan.
 > * We have provided two functions, which can generate four DDFs from global and local transformations, in <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/utils/Transf2DDFs.py" target="_blank">Transf2DDFs.py</a>.
 > * The order of the four DDFs and the order of 307200 pixels cannot be changed and they must all be numpy arrays. Please ensure your prediction does not have null values. Otherwise, the final score could not be generated.
-> * If you want to see the plotted trajectories, please uncomments <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/generate_DDF.py#L52" target="_blank">this line</a>. 
+> * If you want to see the plotted trajectories, please uncomments <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/01115ed7708f6300cf9edc0f4bdad02b13d5e5c3/generate_DDF.py#L51" target="_blank">this line</a>. 
 > * Ensure sufficient RAM is available, as the DDF generation process is performed on the CPU. Insufficient memory may result in a "killed" message due to an out-of-memory error. You can use the `dmesg` command to check detailed system logs related to this issue. Alternatively, to reduce memory usage, consider generating DDFs in chunks. If your GPU has at least 30 GB of memory, you may also generate DDFs on the GPU by moving the inputs to the GPU within the two functions: <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/df325edb0f3ae07f2f8eba993b4dee74fc608de1/utils/Transf2DDFs.py#L5" target="_blank">cal_global_ddfs</a> and <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/df325edb0f3ae07f2f8eba993b4dee74fc608de1/utils/Transf2DDFs.py#L36C5-L36C19" target="_blank">cal_local_ddfs</a>. However, please ensure that the total GPU memory usage remains below 32 GB during testing.
 
 ## Data Usage Policy
@@ -302,8 +303,8 @@ Yipeng Hu, University College London
 ## Sponsors
 
 <div >
-  <a href="http://ucl.ac.uk/hawkes-institute/" target="_blank"><img style="padding: 10px;" src="img/UCL-Hawkes-Institute-WHITE.png" width=140px></a>
-  <a href="https://conferences.miccai.org/2025/en/" target="_blank"><img style="padding: 10px;" src="img/miccai2025-logo.png" width=130px></a>
-  <a href="https://miccai-ultrasound.github.io/#/asmus25" target="_blank"><img style="padding: 10px;" src="img/asmus.png" width=115px></a>
-  <a href="https://miccai.org/index.php/special-interest-groups/sig/" target="_blank"><img style="padding: 10px;" src="img/SIGMUS.png" width=220px></a>
+  <a href="http://ucl.ac.uk/hawkes-institute/" target="_blank"><img style="padding: 30px;" src="img/UCL-Hawkes-Institute-WHITE.png" width=140px></a>
+  <a href="https://conferences.miccai.org/2025/en/" target="_blank"><img style="padding: 30px;" src="img/miccai2025-logo.png" width=130px></a>
+  <a href="https://miccai-ultrasound.github.io/#/asmus25" target="_blank"><img style="padding: 30px;" src="img/asmus.png" width=115px></a>
+  <a href="https://miccai.org/index.php/special-interest-groups/sig/" target="_blank"><img style="padding: 30px;" src="img/SIGMUS.png" width=220px></a>
 </div>
