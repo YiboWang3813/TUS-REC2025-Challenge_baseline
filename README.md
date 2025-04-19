@@ -105,7 +105,9 @@ For any pixel $x$ in $i^{th}$ frame with coordinates $p_x$ in image coordinate s
 <!-- <a id="coordinate"></a> -->
 
 <!-- \begin{equation} -->
+$$
 P_x = T_i \cdot T_{scale} \cdot p_x  \quad (4)
+$$
 <!-- \end{equation} -->
 
 where $T_{scale}$ denotes the scaling from pixel to mm.
