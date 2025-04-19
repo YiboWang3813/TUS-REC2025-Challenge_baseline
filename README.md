@@ -75,34 +75,38 @@ T_{j\leftarrow i}= T_{rotation}^{-1} \cdot T_{j\leftarrow i}^{tool} \cdot T_{rot
 $$
 <!-- , 1 \leq i<j \leq M  -->
 
-In general, prior studies have formulated freehand US reconstruction as the estimation of the transformation between two frames in an US sequence. This estimation relies on a function $f$, which serves as the core of freehand US reconstruction, as expressed in [Eq. 2](#freehandUS): 
+In general, prior studies have formulated freehand US reconstruction as the estimation of the transformation between two frames in an US sequence. This estimation relies on a function $f$, which serves as the core of freehand US reconstruction, as expressed in Eq. 2: 
 
-<a id="freehandUS"></a>
+<!-- <a id="freehandUS"></a>
 
-\begin{equation}
-T_{j\leftarrow i} \approx f(I_i, I_j) \tag{2}
-\end{equation}
-
-
-Typically, adjacent frames are used in [Eq. 2](#freehandUS). The transformation from $i^{th}$ frame to the first frame $T_i$ can be computed by recursively multiplying the previously estimated relative transformations, as shown in [Eq. 3](#chain-multiplying):
-
-<a id="chain-multiplying"></a>
-\begin{equation}
-T_i= T_{1\leftarrow 2} \cdot T_{2\leftarrow 3}  \cdots  T_{i-1\leftarrow i} \tag{3}
-\end{equation}
+\begin{equation} -->
+$$
+T_{j\leftarrow i} \approx f(I_i, I_j) \quad (2)
+$$
+<!-- \end{equation} -->
 
 
-Moreover, [Eq. 3](#chain-multiplying) demonstrates that estimation errors can propagate and accumulate throughout the chain, ultimately resulting in trajectory drift.
+Typically, adjacent frames are used in Eq. 2. The transformation from $i^{th}$ frame to the first frame $T_i$ can be computed by recursively multiplying the previously estimated relative transformations, as shown in Eq. 3:
+
+<!-- <a id="chain-multiplying"></a>
+\begin{equation} -->
+$$
+T_i= T_{1\leftarrow 2} \cdot T_{2\leftarrow 3}  \cdots  T_{i-1\leftarrow i} \quad (3)
+$$
+<!-- \end{equation} -->
+
+
+Moreover, Eq. 3 demonstrates that estimation errors can propagate and accumulate throughout the chain, ultimately resulting in trajectory drift.
 
 Reconstructing the 3D US volume and the trajectory of the US frames requires determining the position of each frame. 
 The first frame is chosen as the reference. As a result, only the relative transformations with respect to the first frame are needed.
-For any pixel $x$ in $i^{th}$ frame with coordinates $p_x$ in image coordinate system (in pixel) of frame $i$, the coordinates in image coordinate system (in mm) of frame 1, $P_x$, can be obtained using [Eq. 4](#coordinate).
+For any pixel $x$ in $i^{th}$ frame with coordinates $p_x$ in image coordinate system (in pixel) of frame $i$, the coordinates in image coordinate system (in mm) of frame 1, $P_x$, can be obtained using Eq. 4.
 
-<a id="coordinate"></a>
+<!-- <a id="coordinate"></a> -->
 
-\begin{equation}
-P_x = T_i \cdot T_{scale} \cdot p_x \tag{4}
-\end{equation}
+<!-- \begin{equation} -->
+P_x = T_i \cdot T_{scale} \cdot p_x \tag{4}  \quad (4)
+<!-- \end{equation} -->
 
 where $T_{scale}$ denotes the scaling from pixel to mm.
 <!-- where $T_i$ denotes the transformation from $i^{th}$ frame to the first frame. -->
