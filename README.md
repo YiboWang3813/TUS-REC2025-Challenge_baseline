@@ -69,7 +69,7 @@ Fig. 2. The relationship among three coordinate systems: the image coordinate sy
 
 The rigid transformation from the $i^{th}$ frame to the $j^{th}$ frame (in mm), $T_{j\leftarrow i}$, can be obtained using [Eq. 1](#transformation), where $T_{j\leftarrow i}^{tool}$ denotes the transformation between $i^{th}$ tacker tool to the $j^{th}$ track tool and $T_{rotation}$ represents spatial calibration from image coordinate system (in mm) to tracking tool coordinate system.
 
-<!-- <a id="transformation"></a> -->
+<a id="transformation"></a>
 $$
 T_{j\leftarrow i}= T_{rotation}^{-1} \cdot T_{j\leftarrow i}^{tool} \cdot T_{rotation} \tag{1}
 $$
