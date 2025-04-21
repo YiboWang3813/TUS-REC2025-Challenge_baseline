@@ -18,6 +18,7 @@ md5sums.txt
 *.zip
 check_ddfs.py
 video_plot/
+example_scan_non_loop.gif
 saved_ddf_1_method/
 saved_ddf_3_methods/
 
