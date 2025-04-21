@@ -215,7 +215,7 @@ Freehand_US_data_train_2025/
 ## Training Code Usage Guide 
 
 ### Instruction
-This repository provides an example framework for freehand US pose regression, including usage of various types of predictions and labels (see <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/utils/transform.py" target="_blank">transformation.py</a>). Please note that the networks used here are small and simplified for demonstration purposes.
+This repository provides an example framework for freehand US pose regression, including usage of various types of predictions and labels (see <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/utils/transform.py" target="_blank">transformation.py</a>). Please note that the network used here is small and simplified for demonstration purposes.
 
 For instance, the network can predict the transformation between two US frames as 6 DOF "parameter". The loss could be calculated as the point distance between ground-truth-transformation-transformed points and predicted-transformation-transformed points, by transforming 4*4 "transform" and 6DOF "parameter" to "point" using function <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/df325edb0f3ae07f2f8eba993b4dee74fc608de1/utils/transform.py#L82" target="_blank">to_points</a> and <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/df325edb0f3ae07f2f8eba993b4dee74fc608de1/utils/transform.py#L241" target="_blank">parameter_to_point</a>. The steps below illustrate an example of training a pose regression model and generating four displacement vectors. 
 <!-- > [!NOTE]   -->
