@@ -316,11 +316,8 @@ Yipeng Hu, University College London
 ## Sponsors
 
 <div >
-  <a href="http://ucl.ac.uk/hawkes-institute/" target="_blank"><img style="padding: 30px;" src="img/UCL-Hawkes-Institute-BLACK.jpg" width=140px></a>
-
-  <a href="https://conferences.miccai.org/2025/en/" target="_blank"><img style="padding: 30px;" src="img/miccai2025-logo.png" width=130px></a>
-
-  <a href="https://miccai-ultrasound.github.io/#/asmus25" target="_blank"><img style="padding: 30px;" src="img/asmus.png" width=115px></a>
-  
-  <a href="https://miccai.org/index.php/special-interest-groups/sig/" target="_blank"><img style="padding: 30px;" src="img/SIGMUS.png" width=220px></a>
+  <a href="http://ucl.ac.uk/hawkes-institute/" target="_blank"><img style="padding: 30px;" src="img/UCL-Hawkes-Institute-BLACK.jpg" width=140px></a>&nbsp;&nbsp;&nbsp;&nbsp;   
+  <a href="https://conferences.miccai.org/2025/en/" target="_blank"><img style="padding: 30px;" src="img/miccai2025-logo.png" width=130px></a>&nbsp;&nbsp;&nbsp;&nbsp;   
+  <a href="https://miccai-ultrasound.github.io/#/asmus25" target="_blank"><img style="padding: 30px;" src="img/asmus.png" width=115px></a>&nbsp;&nbsp;&nbsp;&nbsp;  
+  <a href="https://miccai.org/index.php/special-interest-groups/sig/" target="_blank"><img style="padding: 30px;" src="img/SIGMUS.png" width=220px></a>   
 </div>
