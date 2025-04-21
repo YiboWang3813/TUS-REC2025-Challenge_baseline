@@ -150,7 +150,7 @@ The 2D US images were acquired using an Ultrasonix machine (BK, Europe) with a c
 
 ### Labels / Transformations
 
-The position information recorded by the optical tracker (NDI Polaris Vicra, Northern Digital Inc., Canada) will be provided along with the images, which indicates the position of the US probe for each frame in the camera coordinate system, described as homogeneous transformation matrix with respect to reference frame. A calibration matrix will also be provided, denoting the transformation between US image coordinate system and US probe coordinate system while these data were acquired. The data is provided temporally calibrated, aligning the timestamps for both transformations from the optical tracker and ultrasound frames from US machine.
+The position information recorded by the optical tracker (NDI Polaris Vicra, Northern Digital Inc., Canada) will be provided along with the images, which indicates the position of the US probe for each frame in the camera coordinate system, described as homogeneous transformation matrix with respect to reference frame. A calibration matrix will also be provided, denoting the transformation between US image coordinate system and tracker tool coordinate system while these data were acquired. The data is provided temporally calibrated, aligning the timestamps for both transformations from the optical tracker and ultrasound frames from US machine.
 
 An illustration of a scan is shown in [Fig. 4](#figure4).
 
