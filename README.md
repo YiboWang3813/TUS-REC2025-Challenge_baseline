@@ -236,7 +236,7 @@ cd TUS-REC2025-Challenge_baseline
 ```
 
 
-#### 3. Install conda environment
+#### 3. Install conda environment.
 
 ``` bash
 conda create -n freehand-US python=3.9.13
