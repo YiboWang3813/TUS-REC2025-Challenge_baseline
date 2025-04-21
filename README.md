@@ -3,7 +3,7 @@
 
 <a href="https://github-pages.ucl.ac.uk/tus-rec-challenge/" target="_blank">Website</a> |
 <a href="https://zenodo.org/records/15224704" target="_blank">Train Dataset</a> |
-[Training Code Usage Guide](#training-code) |
+[Training Code Usage Guide](#training-code-usage-guide) |
 [Data Usage Policy](#data-usage-policy)
 <!-- <a href="TBA" target="_blank">Validation Dataset</a> | -->
 <!-- <a href="TBA" target="_blank">Submission Requirement and Example Docker</a> | -->
@@ -212,7 +212,7 @@ Freehand_US_data_train_2025/
     * <a href="https://zenodo.org/doi/10.5281/zenodo.11355499" target="_blank">Training data (Part 3)</a>
     * <a href="https://zenodo.org/doi/10.5281/zenodo.12979481" target="_blank">Validation data</a>
 
-## Training Code
+## Training Code Usage Guide 
 
 ### Instruction
 This repository provides an example framework for freehand US pose regression, including usage of various types of predictions and labels (see <a href="https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/utils/transform.py" target="_blank">transformation.py</a>). Please note that the networks used here are small and simplified for demonstration purposes.
