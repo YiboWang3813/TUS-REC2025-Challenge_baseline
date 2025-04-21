@@ -86,12 +86,12 @@ $$
 <!-- \end{equation} -->
 
 
-Typically, adjacent frames are used in Eq. 2. The transformation from $i^{th}$ frame to the first frame $T_i$ can be computed by recursively multiplying the previously estimated relative transformations, as shown in Eq. 3:
+Typically, adjacent frames are used in Eq. 2. The transformation from $i^{th}$ frame to the first frame $T_{1\leftarrow i}$ can be computed by recursively multiplying the previously estimated relative transformations, as shown in Eq. 3:
 
 <!-- <a id="chain-multiplying"></a>
 \begin{equation} -->
 $$
-T_i= T_{1\leftarrow 2} \cdot T_{2\leftarrow 3}  \cdots  T_{i-1\leftarrow i} \quad (3)
+T_{1\leftarrow i}= T_{1\leftarrow 2} \cdot T_{2\leftarrow 3}  \cdots  T_{i-1\leftarrow i} \quad (3)
 $$
 <!-- \end{equation} -->
 
@@ -106,7 +106,7 @@ For any pixel $x$ in $i^{th}$ frame with coordinates $p_x$ in image coordinate s
 
 <!-- \begin{equation} -->
 $$
-P_x = T_i \cdot T_{scale} \cdot p_x  \quad (4)
+P_x = T_{1\leftarrow i} \cdot T_{scale} \cdot p_x  \quad (4)
 $$
 <!-- \end{equation} -->
 
