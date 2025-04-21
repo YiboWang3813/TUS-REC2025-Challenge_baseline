@@ -297,7 +297,7 @@ After we publish the summary paper of the challenge, if you use our dataset in y
 
 ## Organizers
 
-Qi Li, University College London
+[Qi Li](mailto:qi.li.21@ucl.ac.uk), University College London
 
 Yuliang Huang, University College London
 
