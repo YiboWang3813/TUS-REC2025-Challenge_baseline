@@ -17,6 +17,8 @@
 
 The TUS-REC2025 Challenge is a part of the 28th International Conference on Medical Image Computing and Computer Assisted Intervention (<a href="https://conferences.miccai.org/2025/en/" target="_blank">MICCAI 2025</a>), held in conjunction with the 6th ASMUS workshop, September 23rd 2025 in Daejeon, Republic of Korea. The challenge is supported by the MICCAI Special Interest Group in Medical Ultrasound (<a href="https://miccai.org/index.php/special-interest-groups/sig/" target="_blank">SIGMUS</a>) and will be presented at its international workshop <a href="https://miccai-ultrasound.github.io/#/asmus25" target="_blank">ASMUS 2025</a>.
 
+**You can jump to [Training Code Usage Guide](#training-code-usage-guide) if you have read the introduction in <a href="https://github-pages.ucl.ac.uk/tus-rec-challenge/" target="_blank"> challenge website.</a>**
+
 ## Background
 Reconstructing 2D Ultrasound (US) images into a 3D volume enables 3D representations of anatomy to be generated which are beneficial to a wide range of downstream tasks such as quantitative biometric measurement, multimodal registration, and 3D visualisation. This application is challenging due to 1) inherent accumulated error - frame-to-frame transformation error will be accumulated through time when reconstructing long sequence of US frames, and 2) a lack of publicly-accessible data with synchronised spatial location, often obtained from tracking devices, for benchmarking the performance and for training learning-based methods.
 
