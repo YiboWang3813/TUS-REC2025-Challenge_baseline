@@ -4,9 +4,9 @@
 <a href="https://github-pages.ucl.ac.uk/tus-rec-challenge/" target="_blank">Website</a> |
 <a href="https://zenodo.org/records/15224704" target="_blank">Train Dataset</a> |
 [Training Code Usage Guide](#training-code-usage-guide) |
+<a href="TBA" target="_blank">Validation Dataset</a> |
+<a href="/submission/README.md" target="_blank">Submission Requirement and Example Docker</a> |
 [Data Usage Policy](#data-usage-policy)
-<!-- <a href="TBA" target="_blank">Validation Dataset</a> | -->
-<!-- <a href="TBA" target="_blank">Submission Requirement and Example Docker</a> | -->
 <!-- [Data Usage Policy](#data-usage-policy) -->
 
 <div align=center>

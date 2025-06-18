@@ -1,0 +1,6 @@
+{
+    "PRED_TYPE": "parameter",
+    "LABEL_TYPE": "point",
+    "NUM_SAMPLES": 2,
+    "model_name":"efficientnet_b1"
+}

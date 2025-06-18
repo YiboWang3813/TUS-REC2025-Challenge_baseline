@@ -24,12 +24,12 @@ def reference_image_points(image_size, density=2):
     return image_points
 
 def data_pairs_global(num_frames):
-    # obtain the data pairs to compute the tarnsfomration between frames and the reference (first) frame
+    # obtain the data pairs to compute the transfomration between frames and the reference (first) frame
     
     return torch.tensor([[0,n0] for n0 in range(num_frames)])
 
 def data_pairs_local(num_frames):
-    # obtain the data pairs to compute the tarnsfomration between frames and the reference (the immediate previous) frame
+    # obtain the data pairs to compute the transfomration between frames and the reference (the immediate previous) frame
     
     return torch.tensor([[n0,n0+1] for n0 in range(num_frames)])
 

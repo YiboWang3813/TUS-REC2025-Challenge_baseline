@@ -21,6 +21,7 @@ video_plot/
 example_scan_non_loop.gif
 saved_ddf_1_method/
 saved_ddf_3_methods/
+submission/results/
 
 results/*
 !results/seq_len2__efficientnet_b1__lr0.0001__pred_type_parameter__label_type_point
