@@ -9,15 +9,15 @@
 
 ## Submission requirement
 * We have provided an example docker image [here](#instructions-for-docker), which can predict DDFs on the validation/test dataset. The source code is also available in [`submission`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/tree/main/submission) folder.
-* The participants are expected to replace the content of [`predict_ddfs`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/submission/predict_ddfs.py) function with their own algorithm, which is used in [test.py](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/41ff3604a914942b38681b180c30af8b0750f6cb/submission/test.py#L43). The function is expected to take one entire scan as input, and output four DDFs. There is no requirement on how the algorithm is designed internally, for example, whether it is learning-based method; frame-, sequence- or scan-based processing; or, rigid-, affine- or nonrigid transformation assumptions.  
+* The participants are expected to replace the content of [`predict_ddfs`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/submission/predict_ddfs.py) function with their own algorithm, which is used in [test.py](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/ed1c1be5b75527816c8bd6e92aa9eb3834fd4715/submission/test.py#L43). The function is expected to take one entire scan as input, and output four DDFs. There is no requirement on how the algorithm is designed internally, for example, whether it is learning-based method; frame-, sequence- or scan-based processing; or, rigid-, affine- or nonrigid transformation assumptions.  
 * The requirement of the `predict_ddfs` function is described below:
   * Input: 
     * `frames`: All frames in the scan; numpy array with a shape of [N,480,640], where N is the number of frames in this scan.
     * `landmark`: Location of 100 landmarks in the scan; numpy array with a shape of [100,3]. Each row denotes one landmark and the three columns denote the frame index (starting from 0) and the 2d-coordinates of landmarks in the image coordinate system (starting from 1, to maintain consistency with the calibration process). For example, if a row is [10,200,100], it means there is a landmark on the 10th frame, with coordinate of [200,100].
     * `data_path_calib`: Path to calibration matrix.
-    * `device`: Device to run the model on, provided in [this line](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/41ff3604a914942b38681b180c30af8b0750f6cb/submission/test.py#L30).
+    * `device`: Device to run the model on, provided in [this line](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/ed1c1be5b75527816c8bd6e92aa9eb3834fd4715/submission/test.py#L30).
   * Output:  
-     * `GP`: Global displacement vectors for all pixels. DDF from the current frame to the first frame, in mm. The first frame is regarded as the reference frame. The DDF should be in numpy array format with a shape of [N-1,3,307200] where N-1 is the number of frames in that scan (excluding the first frame), "3" denotes “x”, “y”, and “z” axes, respectively, and 307200 is the number of all pixels in a frame. The order of the flattened 307200 pixels can be found in function [`reference_image_points`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/41ff3604a914942b38681b180c30af8b0750f6cb/submission/utils/plot_functions.py#L6).
+     * `GP`: Global displacement vectors for all pixels. DDF from the current frame to the first frame, in mm. The first frame is regarded as the reference frame. The DDF should be in numpy array format with a shape of [N-1,3,307200] where N-1 is the number of frames in that scan (excluding the first frame), "3" denotes “x”, “y”, and “z” axes, respectively, and 307200 is the number of all pixels in a frame. The order of the flattened 307200 pixels can be found in function [`reference_image_points`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/ed1c1be5b75527816c8bd6e92aa9eb3834fd4715/submission/utils/plot_functions.py#L6).
      * `GL`: Global displacement vectors for landmarks, in mm. The DDF should be in numpy array format with a shape of [3,100], where 100 is the number of landmarks in a scan.
      * `LP`: Local displacement vectors for all pixels. DDF from current frame to the previous frame, in mm. The previous frame is regarded as the reference frame. The DDF should be in numpy array format with a shape of [N-1,3,307200], where N-1 is the number of frames in that scan (excluding the first frame), "3" denotes “x”, “y”, and “z” axes, respectively, and 307200 is the number of all pixels in a frame. The order of the flattened 307200 pixels can be found in function [`reference_image_points`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/41ff3604a914942b38681b180c30af8b0750f6cb/submission/utils/plot_functions.py#L6).
      * `LL`: Local displacement vectors for landmarks, in mm. The DDF should be in numpy array format with a shape of [3,100], where 100 is the number of landmarks in a scan.
@@ -29,62 +29,47 @@
 > * Only modify the implementation of the `predict_ddfs` function. It’s okay to add files but please do not change existing files other than `baseline_model` folder.
 > *  The order of the four DDFs and the order of 307200 pixels cannot be changed and they must all be numpy arrays. Please ensure your prediction does not have null values. Otherwise, the final score could not be generated.  
 > * Make sure the GPU memory is below 32G when running docker.
-> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this [form](https://forms.office.com/e/QChhNkLYiu).
+> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this [form](TBA).
 
 ## Data structure
-We have provided validation data [here](https://zenodo.org/doi/10.5281/zenodo.12979481), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](https://zenodo.org/doi/10.5281/zenodo.12979481).
+We have provided validation data [here](TBA), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](TBA).
 
 ```bash
 Freehand_US_data_val_2025/ 
     │
     ├── frames/
-    │   ├── 000/
-    │       ├── RH_rotation.h5 # US frames in rotating scan of right forearm, subject 000
-    │       └── LH_rotation.h5 # US frames in rotating scan of left forearm, subject 000
+    │   ├── 050/
+    │       ├── RH_rotation.h5 # US frames in rotating scan of right forearm, subject 050
+    │       └── LH_rotation.h5 # US frames in rotating scan of left forearm, subject 050
     │   
-    │   ├── 001/
-    │       ├── RH_rotation.h5 # US frames in rotating scan of right forearm, subject 001
-    │       └── LH_rotation.h5 # US frames in rotating scan of left forearm, subject 001
+    │   ├── 051/
+    │       ├── RH_rotation.h5 # US frames in rotating scan of right forearm, subject 051
+    │       └── LH_rotation.h5 # US frames in rotating scan of left forearm, subject 051
     │   
     │   ├── ...
     │
     │
     ├── transfs/
-    │   ├── 000/
-    │       ├── RH_rotation.h5 # US frames in rotating scan of right forearm, subject 000
-    │       └── LH_rotation.h5 # US frames in rotating scan of left forearm, subject 000
+    │   ├── 050/
+    │       ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 050
+    │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 050
     │   
-    │   ├── 001/
-    │       ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 001
-    │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 001
+    │   ├── 051/
+    │       ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 051
+    │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 051
     │   
     │   ├── ...
     │
+    │
     ├── landmarks/
-    │   ├── landmark_000.h5 # landmarks in scans of subject 000
-    │   ├── landmark_001.h5 # landmarks in scans of subject 001
+    │   ├── landmark_050.h5 # landmark coordinates in scans of subject 050
+    │   ├── landmark_051.h5 # landmark coordinates in scans of subject 051
     │   ├── ...
     │
     ├── calib_matrix.csv # calibration matrix
+    ├── dataset_keys.h5 # contains paths of all scans for the dataset
 
 
-
-├── data/
-│ ├── frames/
-│  ├── 050/ # Contains 2 scans in subject 050
-│    ├── RH_rotation.h5 # US frames rotating scan of right forearm, subject 050 
-│    └── LH_rotation.h5 # US frames rotating scan of left forearm, subject 050 
-│  ├── ...
-│ ├── transfs/
-│  ├── 050/ # Contains 2 scans in subject 050
-│    ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 050 
-│    └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 050 
-│  ├── ...
-│ ├── landmarks/
-│  ├── landmark_050.h5 # Landmark coordinates in subject 050
-│  ├── ...
-│ ├── calib_matrix.csv # calibration matrix
-│ ├── dataset_keys.h5 # contains paths of all scans for the data set
 ```
 
 
@@ -153,26 +138,14 @@ You can start from our example [Dockerfile](https://github.com/QiLi111/TUS-REC20
 #### 4. Build docker image using Dockerfile. 
 
 ```
-docker build -t TUS-REC2025:v1 .
+docker build -t tus-rec2025:v1 .
 ```
-The `-t TUS-REC2025:v1` option specifies the name and tag of the image. The single dot (`.`) at the end of the command sets the build context to the current directory. You may refer to the [official website](https://docs.docker.com/build/building/packaging/#building) for detailed information. After building the docker image, you can run `docker images` to check a list of all local Docker images. 
+The `-t tus-rec2025:v1` option specifies the name and tag of the image. The single dot (`.`) at the end of the command sets the build context to the current directory. You may refer to the [official website](https://docs.docker.com/build/building/packaging/#building) for detailed information. After building the docker image, you can run `docker images` to check a list of all local Docker images. 
 
-Alternatively, the docker image is also available online. You can download it with the two options below.
-
-* ##### Option 1: Pull docker image from [Docker Hub](https://hub.docker.com/r/qqili/tus-rec).
-  ```
-  docker pull qqili/tus-rec:v1
-  ```
-* ##### Option 2: Download from [OneDrive](https://liveuclac-my.sharepoint.com/:f:/g/personal/rmapqli_ucl_ac_uk/EtEuWaTnTitKrrySZAGpCBgB0a0H_H2VyedexxEkJTUZLw?e=gdZFOu). 
-  After downloading the docker image into your local machine, run the following command to load the docker image (more instruction [here](https://docs.docker.com/reference/cli/docker/image/load/)).
-  ```
-  docker load --input tus-rec.tar
-  ```
-
-#### 5. Download Validation Dataset `Freehand_US_data_val_2025.zip` [here](https://zenodo.org/doi/10.5281/zenodo.12979481) into `submission` folder. (You may need to install zenodo_get)
+#### 5. Download Validation Dataset `Freehand_US_data_val_2025.zip` [here](TBA) into `submission` folder. (You may need to install zenodo_get)
 ```
 pip3 install zenodo_get
-zenodo_get 12979481
+zenodo_get XXX
 ```
 
 #### 6. Unzip.
@@ -185,26 +158,23 @@ unzip Freehand_US_data_val_2025.zip -d ./data
 * If your Docker Engine version is above 23, relative path is supported when mounting external folders into docker container.
 
   ```
-  docker container run --gpus all -it -v ./data:/home/TUS-REC2025/data -v ./results:/home/TUS-REC2025/results --rm TUS-REC2025:v1
+  docker container run --gpus all -it -v ./data:/home/TUS-REC2025/data -v ./results:/home/TUS-REC2025/results --rm tus-rec2025:v1
   ```
 * If your Docker Engine version is below 23, absolute path is compulsory.
 
   ```
-  docker container run --gpus all -it -v /path/to/your/data/directory/on/the/host/machine:/home/TUS-REC2025/data -v /path/to/your/results/directory/on/the/host/machine:/home/TUS-REC2025/results --rm TUS-REC2025:v1
+  docker container run --gpus all -it -v /path/to/your/data/directory/on/the/host/machine:/home/TUS-REC2025/data -v /path/to/your/results/directory/on/the/host/machine:/home/TUS-REC2025/results --rm tus-rec2025:v1
   ```
 
   The `--gpu` option specifies which gpu to use, and the `-v` option specifies the mounted directories (`data` and `results`) on the host machine, the `-it` option opens interactive window to receive standard output and the `--rm` option means the container will be deleted once exit (more instruction [here](https://docs.docker.com/reference/cli/docker/container/run/#volume)). 
 
-  Note: If you use docker image from Docker Hub, the namespace `qqili` should be added before name of the docker image, for example:
-  ```
-  docker container run --gpus all -it -v /path/to/your/data/directory/on/the/host/machine:/home/tus-rec_challenge/data -v /path/to/your/results/directory/on/the/host/machine:/home/tus-rec_challenge/results --rm qqili/tus-rec:v1
-  ```
+
 <!-- You can check the status of all the running containers using command `docker ps`. -->
   
-  After successfully running the docker, you will see the `results` folder. You can also compare your own results with baseline results [here](https://liveuclac-my.sharepoint.com/:f:/g/personal/rmapqli_ucl_ac_uk/Emi-85IkzN1Iscn540Was3MB2n-IFHhP6g_vZHrIuu0YjQ?e=A8Uqwy).
+  After successfully running the docker, you will see the `results` folder. 
 
 #### 8. Export docker image.
 ```
-docker save -o TUS-REC2025.tar TUS-REC2025:v1
+docker save -o tus-rec2025.tar tus-rec2025:v1
 ```
-Export image `TUS-REC2025:v1` to `TUS-REC2025.tar` (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).
+Export image `tus-rec2025:v1` to `tus-rec2025.tar` (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).

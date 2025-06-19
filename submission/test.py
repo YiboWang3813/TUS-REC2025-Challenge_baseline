@@ -11,12 +11,8 @@ from utils.plot_scans import plot_scans
 
 def main():
     # folder name in docker container that external folders will be mounted to
-    # DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data')
-    # RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)),'results')
-
-    DATA_FOLDER = os.environ["DATA_FOLDER"]
-    RESULTS_FOLDER = os.environ["RESULTS_FOLDER"]
-
+    DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data')
+    RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)),'results')
 
     # path to data folders
     data_path_frame = os.path.join(DATA_FOLDER,'frames')
