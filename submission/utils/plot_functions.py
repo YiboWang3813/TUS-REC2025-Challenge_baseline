@@ -25,7 +25,7 @@ def reference_image_points(image_size, density=2):
     return image_points
 
 def transform_t2t(tforms, tforms_inv,pairs):
-    # get the transformation between two tools, calculated from NDI recorded transformation, which is the transformation between the tool and the world
+    # get the transformation between two tools, calculated from NDI recorded transformation, which is the transformation between the tool and the world (camera)
     tforms_world_to_tool0 = tforms_inv[pairs[:,0],:,:]
     tforms_tool1_to_world = tforms[pairs[:,1],:,:]
     return torch.matmul(tforms_world_to_tool0, tforms_tool1_to_world)  # tform_tool1_to_tool0

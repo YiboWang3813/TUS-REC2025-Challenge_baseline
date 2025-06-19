@@ -47,7 +47,7 @@ class LabelTransform():
         """
         :param label_type: {"point", "parameter", "transform"}
         :param pairs: data pairs, between which the transformations are constructed
-        :param tform_image_to_tool: transformation from image coordinate system to tool coordinate system, usually obtained from calibration
+        :param tform_image_to_tool: transformation from image coordinate system (in pixel) to tool coordinate system, usually obtained from calibration
         :param tform_image_mm_to_tool: transformation from image coordinate system (in mm) to tool coordinate system
         :param tform_image_pixel_to_mm: transformation from image coordinate system (in pixel) to image coordinate system (in mm)
         """
@@ -122,7 +122,7 @@ class PredictionTransform():
         :param pred_type = {"transform", "parameter", "point", "quaternion"}
         :param label_type = {"point", "parameter", "transform"}
         :param num_pairs: number of data pairs
-        :param tform_image_to_tool: transformation from image coordinate system to tool coordinate system, usually obtained from calibration
+        :param tform_image_to_tool: transformation from image coordinate system (in pixel) to tool coordinate system, usually obtained from calibration
         :param tform_image_mm_to_tool: transformation from image coordinate system (in mm) to tool coordinate system
         :param tform_image_pixel_to_mm: transformation from image coordinate system (in pixel) to image coordinate system (in mm)
         """
@@ -166,7 +166,7 @@ class PredictionTransform():
                 if self.label_type=="point":
                     self.call_function = self.transform_to_point
                 elif self.label_type=="parameter":
-                # as the prediction is not constrained to be Orthogonal Matrix, the transformation cannot converted into 6DOF parameter using functions in pytorch3d
+                # as the prediction is not constrained to be Orthogonal Matrix, the transformation cannot be converted into 6DOF parameter using functions in pytorch3d
                     raise('Not supported!')
                 elif self.label_type == "transform":
                     self.call_function = self.transform_to_transform

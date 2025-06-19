@@ -5,7 +5,6 @@ import torch
 from baseline_model.network import build_model
 from utils.transform import Transforms,TransformAccumulation
 from utils.plot_functions import reference_image_points,read_calib_matrices
-from utils.Transf2DDFs import cal_global_allpts,cal_global_landmark,cal_local_allpts,cal_local_landmark
 from utils.Transf2DDFs import cal_global_ddfs,cal_local_ddfs
 
 class Prediction():  
@@ -57,7 +56,7 @@ class Prediction():
         frames = frames/255
         landmark = torch.from_numpy(landmark)
 
-        # predict global and local transformations, from model
+        # predict global and local transformations
         transformation_global, transformation_local = self.cal_pred_transformations(frames)
         transformation_global, transformation_local = transformation_global.to(self.device), transformation_local.to(self.device)
        
@@ -70,7 +69,7 @@ class Prediction():
 
     def cal_pred_transformations(self,frames):
         """
-        predict global and local transformations from model
+        predict global and local transformations
 
         Args:
             frames (torch.Tensor): shape=(1, N, H, W), all frames in the scan, where N denotes the number of frames in the scan, H and W denote the height and width of a frame. 
@@ -110,7 +109,7 @@ class Prediction():
 
         if self.parameters['NUM_SAMPLES'] > 2:
             # NOTE: As not all frames will be reconstructed, we could use interpolation or some other methods to fill the missing frames
-            # This baseline code provides a simple way to fill the missing frames, by using the last reconstructed frame to fill the missing frames
+            # This baseline code provides a simple way to fill the missing frames, filling the missing frames using the last reconstructed frame 
             transformation_local[idx_f0:,...] = torch.eye(4).expand(transformation_local[idx_f0:,...].shape[0],-1,-1)
             transformation_global[idx_f0:,...] = transformation_global[idx_f0-1].expand(transformation_global[idx_f0:,...].shape[0],-1,-1)
         

@@ -12,15 +12,15 @@ def predict_ddfs(frames,landmark,data_path_calib,device):
     
     Args:
         frames (numpy.ndarray): shape=(N, 480, 640),frames in the scan, where N is the number of frames in this scan
-        landmark (numpy.ndarray): shape=(20,3), denoting the location of landmark. For example, a landmark with location of (10,200,100) denotes the landmark on the 10th frame, with coordinate of (200,100)
+        landmark (numpy.ndarray): shape=(100,3), denoting the location of landmark. For example, a landmark with location of (10,200,100) denotes the landmark on the 10th frame, with coordinate of (200,100)
         data_path_calib (str): path to calibration matrix
         device (torch.device): device to run the model on, e.g., torch.device('cuda') or torch.device('cpu')
 
     Returns:
         pred_global_allpts_DDF (numpy.ndarray): shape=(N-1, 3, 307200), global DDF for all pixels, where N-1 is the number of frames in that scan (excluding the first frame)
-        pred_global_landmark_DDF (numpy.ndarray): shape=(3, 20), global DDF for landmark  
+        pred_global_landmark_DDF (numpy.ndarray): shape=(3, 100), global DDF for landmark  
         pred_local_allpts_DDF (numpy.ndarray): shape=(N-1, 3, 307200), local DDF for all pixels, where N-1 is the number of frames in that scan (excluding the first frame) 
-        pred_local_landmark_DDF (numpy.ndarray): shape=(3, 20), local DDF for landmark
+        pred_local_landmark_DDF (numpy.ndarray): shape=(3, 100), local DDF for landmark
     
     """
     
