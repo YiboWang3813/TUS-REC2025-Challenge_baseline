@@ -23,21 +23,11 @@ class generate_ddf_from_label():
 
         # generate global and local transformations, based on recorded transformations (from tracker space to camera space) from NDI tracker. 
         transformation_global,transformation_local = self.get_global_local_transformations(tforms,tforms_inv)
-        # Global displacement vectors for pixel reconstruction
-        labels_global_allpts_DDF1 = cal_global_allpts(transformation_global,self.tform_calib_scale,self.image_points)
-        # Global displacement vectors for landmark reconstruction
-        labels_global_landmark_DDF1 = cal_global_landmark(transformation_global,landmark,self.tform_calib_scale)
-        # Local displacement vectors for pixel reconstruction
-        labels_local_allpts_DDF1 = cal_local_allpts(transformation_local,self.tform_calib_scale,self.image_points)
-        # Local displacement vectors for landmark reconstruction
-        labels_local_landmark_DDF1 = cal_local_landmark(transformation_local,landmark,self.tform_calib_scale)
-
-
+        
         # Global displacement vectors for pixel reconstruction and landmark reconstruction
         labels_global_allpts_DDF,labels_global_landmark_DDF = cal_global_ddfs(transformation_global.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
         # Local displacement vectors for pixel reconstruction and landmark reconstruction
         labels_local_allpts_DDF,labels_local_landmark_DDF = cal_local_ddfs(transformation_local.cpu(),self.tform_calib_scale.cpu(),self.image_points.cpu(),landmark)
-
 
         return labels_global_allpts_DDF,labels_global_landmark_DDF,labels_local_allpts_DDF,labels_local_landmark_DDF
 
