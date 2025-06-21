@@ -13,7 +13,7 @@
 * The requirement of the `predict_ddfs` function is described below:
   * Input: 
     * `frames`: All frames in the scan; numpy array with a shape of [N,480,640], where N is the number of frames in this scan.
-    * `landmark`: Location of 100 landmarks in the scan; numpy array with a shape of [100,3]. Each row denotes one landmark and the three columns denote the frame index (starting from 0) and the 2d-coordinates of landmarks in the image coordinate system (starting from 1, to maintain consistency with the calibration process). For example, if a row is [10,200,100], it means there is a landmark on the 10th frame, with coordinate of [200,100].
+    * `landmark`: Location of 100 landmarks in the scan; numpy array with a shape of [100,3]. Each row denotes one landmark and the three columns denote the frame index (starting from 0) and the 2d-coordinates of landmarks in the image coordinate system (starting from 1, to maintain consistency with the calibration process). For example, a row like [10,200,100] indicates that there is a landmark in the 10th frame, located at the coordinates [200, 100].
     * `data_path_calib`: Path to calibration matrix.
     * `device`: Device to run the model on, provided in [this line](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/a818cdb708049b6a2209b7dbde6759ef1c8af0e8/submission/test.py#L26).
   * Output:  
@@ -55,8 +55,8 @@ Freehand_US_data_val_2025/
     │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 050
     │   
     │   ├── 051/
-    │       ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 051
-    │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 051
+    │       ├── RH_rotation.h5 # transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 051
+    │       └── LH_rotation.h5 # transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 051
     │   
     │   ├── ...
     │
@@ -90,8 +90,8 @@ This section contains instructions to build and run docker image.
 Note: sudo or docker group permissions may be needed to run the following commands.
 
 ### Prerequisites
-* [Docker Engine](https://docs.docker.com/engine/install/).
-* [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#).
+* [Docker Engine](https://docs.docker.com/engine/install/)
+* [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#)
 <!-- 
 If you are using GPU, NVIDIA Container Toolkit may need to be installed. You can refer to the [official website](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) or follow the steps below.
 
@@ -179,7 +179,7 @@ Export image `tus-rec2025:v1` to `tus-rec2025.tar`
 docker save -o tus-rec2025.tar tus-rec2025:v1
 ```
 
-You can also export the compressed Docker image file using command below (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).
+You can also export the compressed Docker image using command below (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).
 ```
 docker save tus-rec2025:v1 | gzip > tus-rec2025.tar.gz
 ```
