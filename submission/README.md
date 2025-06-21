@@ -28,8 +28,9 @@
 >* We have provided two functions, which can generate four DDFs from global and local transformations, in [`Transf2DDFs.py`](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/main/submission/utils/Transf2DDFs.py).
 > * Only modify the implementation of the `predict_ddfs` function. It’s okay to add files but please do not change existing files other than `baseline_model` folder.
 > *  The order of the four DDFs and the order of 307200 pixels cannot be changed and they must all be numpy arrays. Please ensure your prediction does not have null values. Otherwise, the final score could not be generated.  
-> * Make sure the GPU memory is below 32G when running docker.
-> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this [form](https://forms.office.com/e/dj1g5TKyaj).
+> * Your model is expected to run on a single GPU, with GPU memory usage not exceeding 32GB when running docker.
+> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this <a href="https://forms.office.com/e/dj1g5TKyaj" target="_blank">form</a>.
+> * Participants are allowed to make multiple distinct submissions (but must ensure they are not merely simple variations in hyperparameter values), and the best result will be selected for competing. The number of submissions for each team is limited to 5 to preserve variations in hyperparameters.
 
 ## Data structure
 We have provided validation data [here](https://doi.org/10.5281/zenodo.15699958), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](https://doi.org/10.5281/zenodo.15699958). The difference between training and validation sets is: 1) separate image and transformation for each scan into two folders; 2) provide paths to all scans in the dataset in `dataset_keys.h5`.
