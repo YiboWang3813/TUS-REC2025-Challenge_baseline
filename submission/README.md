@@ -33,7 +33,7 @@
 > * Participants are allowed to make multiple distinct submissions (but must ensure they are not merely simple variations in hyperparameter values), and the best result will be selected for competing. The number of submissions for each team is limited to 5 to preserve variations in hyperparameters.
 
 ## Data structure
-We have provided validation data [here](https://doi.org/10.5281/zenodo.15699958), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](https://doi.org/10.5281/zenodo.15699958). The difference between training and validation sets is: 1) separate image and transformation for each scan into two folders; 2) provide paths to all scans in the dataset in `dataset_keys.h5`.
+We have provided validation data [here](https://doi.org/10.5281/zenodo.15699958), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](https://doi.org/10.5281/zenodo.15699958). The validation set is different from the training set in that: 1) the image and transformation for each scan are stored separately in two folders; 2) the added file `dataset_keys.h5` contains the paths to all scans in the dataset.
 
 ```bash
 Freehand_US_data_val_2025/ 
@@ -52,8 +52,8 @@ Freehand_US_data_val_2025/
     │
     ├── transfs/
     │   ├── 050/
-    │       ├── RH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 050
-    │       └── LH_rotation.h5 # Transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 050
+    │       ├── RH_rotation.h5 # transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 050
+    │       └── LH_rotation.h5 # transformations (from tracker tool space to optical camera space) in rotating scan of left forearm, subject 050
     │   
     │   ├── 051/
     │       ├── RH_rotation.h5 # transformations (from tracker tool space to optical camera space) in rotating scan of right forearm, subject 051
