@@ -4,7 +4,7 @@
 <a href="https://github-pages.ucl.ac.uk/tus-rec-challenge/" target="_blank">Website</a> |
 <a href="https://zenodo.org/records/15224704" target="_blank">Train Dataset</a> |
 [Training Code Usage Guide](#training-code-usage-guide) |
-<a href="TBA" target="_blank">Validation Dataset</a> |
+<a href="https://doi.org/10.5281/zenodo.15699958" target="_blank">Validation Dataset</a> |
 <a href="/submission/README.md" target="_blank">Submission Requirement and Example Docker</a> |
 [Data Usage Policy](#data-usage-policy)
 <!-- [Data Usage Policy](#data-usage-policy) -->
@@ -193,7 +193,7 @@ Freehand_US_data_train_2025/
     │   ├── landmark_001.h5 # landmarks in scans of subject 001
     │   ├── ...
     │
-    ├── calib_matrix.csv # calibration matrix
+    └── calib_matrix.csv # calibration matrix
 
 ```
 

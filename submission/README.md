@@ -29,10 +29,10 @@
 > * Only modify the implementation of the `predict_ddfs` function. It’s okay to add files but please do not change existing files other than `baseline_model` folder.
 > *  The order of the four DDFs and the order of 307200 pixels cannot be changed and they must all be numpy arrays. Please ensure your prediction does not have null values. Otherwise, the final score could not be generated.  
 > * Make sure the GPU memory is below 32G when running docker.
-> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this [form](TBA).
+> * Participants are required to dockerize their trained network/algorithm/method and submit them via a file-sharing link (e.g., OneDrive, Dropbox) to the organizers via this [form](https://forms.office.com/e/dj1g5TKyaj).
 
 ## Data structure
-We have provided validation data [here](TBA), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](TBA).
+We have provided validation data [here](https://doi.org/10.5281/zenodo.15699958), which has the same structure as the test data. A successful run on the validation set will ensure that the code will run without problems on the holdout test set. The data folder structure is as follows. Details can be found in the [zenodo page](https://doi.org/10.5281/zenodo.15699958).
 
 ```bash
 Freehand_US_data_val_2025/ 
@@ -67,7 +67,7 @@ Freehand_US_data_val_2025/
     │   ├── ...
     │
     ├── calib_matrix.csv # calibration matrix
-    ├── dataset_keys.h5 # contains paths of all scans for the dataset
+    └── dataset_keys.h5 # contains paths of all scans for the dataset
 
 
 ```
@@ -142,10 +142,10 @@ docker build -t tus-rec2025:v1 .
 ```
 The `-t tus-rec2025:v1` option specifies the name and tag of the image. The single dot (`.`) at the end of the command sets the build context to the current directory. You may refer to the [official website](https://docs.docker.com/build/building/packaging/#building) for detailed information. After building the docker image, you can run `docker images` to check a list of all local Docker images. 
 
-#### 5. Download Validation Dataset `Freehand_US_data_val_2025.zip` [here](TBA) into `submission` folder. (You may need to install zenodo_get)
+#### 5. Download Validation Dataset `Freehand_US_data_val_2025.zip` [here](https://doi.org/10.5281/zenodo.15699958) into `submission` folder. (You may need to install zenodo_get)
 ```
 pip3 install zenodo_get
-zenodo_get XXX
+zenodo_get 15699959
 ```
 
 #### 6. Unzip.
@@ -174,7 +174,13 @@ unzip Freehand_US_data_val_2025.zip -d ./data
   After successfully running the docker, you will see the `results` folder. 
 
 #### 8. Export docker image.
+Export image `tus-rec2025:v1` to `tus-rec2025.tar`
 ```
 docker save -o tus-rec2025.tar tus-rec2025:v1
 ```
-Export image `tus-rec2025:v1` to `tus-rec2025.tar` (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).
+
+You can also export the compressed Docker image file using command below (more instruction [here](https://docs.docker.com/reference/cli/docker/image/save/)).
+```
+docker save tus-rec2025:v1 | gzip > tus-rec2025.tar.gz
+```
+
