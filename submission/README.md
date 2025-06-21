@@ -13,7 +13,7 @@
 * The requirement of the `predict_ddfs` function is described below:
   * Input: 
     * `frames`: All frames in the scan; numpy array with a shape of [N,480,640], where N is the number of frames in this scan.
-    * `landmark`: Location of 100 landmarks in the scan; numpy array with a shape of [100,3]. Each row denotes one landmark and the three columns denote the frame index (starting from 0) and the 2d-coordinates of landmarks in the image coordinate system (starting from 1, to maintain consistency with the calibration process). For example, a row like [10,200,100] indicates that there is a landmark in the 10th frame, located at the coordinates [200, 100].
+    * `landmark`: Location of 100 landmarks in the scan; numpy array with a shape of [100,3]. Each row denotes one landmark and the three columns denote the frame index (starting from 0) and the 2d-coordinates of landmarks in the image coordinate system (starting from 1, to maintain consistency with the calibration process). For example, a row like [10,200,100] indicates that there is a landmark in the 10th frame, located at the coordinates [200,100].
     * `data_path_calib`: Path to calibration matrix.
     * `device`: Device to run the model on, provided in [this line](https://github.com/QiLi111/TUS-REC2025-Challenge_baseline/blob/a818cdb708049b6a2209b7dbde6759ef1c8af0e8/submission/test.py#L26).
   * Output:  
@@ -68,7 +68,7 @@ Freehand_US_data_val_2025/
     │   ├── ...
     │
     ├── calib_matrix.csv # calibration matrix
-    └── dataset_keys.h5 # contains paths of all scans for the dataset
+    └── dataset_keys.h5 # contains paths to all scans in the dataset
 
 
 ```
