@@ -18,7 +18,7 @@ writer = SummaryWriter(os.path.join(os.getcwd(),opt.SAVE_PATH))
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_ids
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # get data pairs for prediction
-data_pairs = pair_samples(opt.NUM_SAMPLES, opt.NUM_PRED, 0).to(device)
+data_pairs = pair_samples(opt.NUM_SAMPLES, opt.NUM_PRED, 0).to(device) # tensor([[0, 1]])
 with open(os.getcwd()+'/'+ opt.SAVE_PATH +'/'+ 'data_pairs.json', 'w', encoding='utf-8') as fp:
     json.dump(data_pairs.cpu().numpy().tolist(), fp, ensure_ascii=False, indent=4)
 

@@ -8,7 +8,7 @@ import numpy as np
 
 class Dataset():
 
-    def __init__(self, data_path,num_samples, sample_range, indices_in_use=None):
+    def __init__(self, data_path, num_samples, sample_range, indices_in_use=None):
 
         """
         :param data_path, path to dataset
@@ -21,15 +21,15 @@ class Dataset():
         :param num_samples: type int, number of (model input) frames, > 1. However, when num_samples=-1, sample all in the scan
         :param sample_range: type int, range of sampling frames, default is num_samples; should not larger than the number of frames in a scan
         """
-        self.data_path=data_path
+        self.data_path = data_path
         self.subs = [f for f in os.listdir(os.path.join(os.getcwd(),self.data_path)) if os.path.isdir(os.path.join(self.data_path, f))]
-        self.subs = sorted(self.subs)
+        self.subs = sorted(self.subs) # ['000', '001', ..., '049']
         # scans in each folder have the same set of names
-        self.scans = [f for f in os.listdir(os.path.join(os.getcwd(),self.data_path, self.subs[0])) if f.endswith(".h5")]
+        self.scans = [f for f in os.listdir(os.path.join(os.getcwd(),self.data_path, self.subs[0])) if f.endswith(".h5")] # ['LH_rotation.h5', 'RH_rotation.h5']
         
         if indices_in_use is None:
             # use all the scans
-            self.indices_in_use = [(i_sub,i_scn) for i_sub in range(len(self.subs)) for i_scn in range(len(self.scans))]                    
+            self.indices_in_use = [(i_sub,i_scn) for i_sub in range(len(self.subs)) for i_scn in range(len(self.scans))] # [(0,0), (0,1), (1,0), (1,1), ...]                   
 
         # use selected scans
         elif all([isinstance(t,tuple) for t in indices_in_use]):
@@ -43,7 +43,7 @@ class Dataset():
             print("WARNING: Replicated indices are found - not removed.")
         
         self.indices_in_use.sort()
-        self.num_indices = len(self.indices_in_use)
+        self.num_indices = len(self.indices_in_use) # 50*2=100
 
         # sampling parameters
         if num_samples < 2:
@@ -53,12 +53,12 @@ class Dataset():
                     print("Sampling all frames. sample_range is ignored.")
             else:
                 raise('num_samples should be greater than or equal to 2, or -1 for sampling all frames.')
-        self.num_samples = num_samples
+        self.num_samples = num_samples # 2 
         
         if sample_range is None:
             self.sample_range = self.num_samples
         else:
-            self.sample_range = sample_range
+            self.sample_range = sample_range # 2 
 
     def partition_by_ratio(self, ratios, randomise=False):
         # partition the dataset into train, val, and test sets
@@ -68,16 +68,16 @@ class Dataset():
 
         """
         
-        num_sets = len(ratios)
-        ratios = [ratios[i]/sum(ratios) for i in range(num_sets)]
+        num_sets = len(ratios) # 5 
+        ratios = [ratios[i]/sum(ratios) for i in range(num_sets)] # [0.2, 0.2, 0.2, 0.2, 0.2]
         print("Partitioning into %d sets with a normalised ratios %s," %
               (num_sets, ratios))
 
         # subject-level split
-        set_sizes = [int(len(self.subs)*r) for r in ratios]
-        sub_ind = list(range(len(self.subs)))
+        set_sizes = [int(len(self.subs)*r) for r in ratios] # [10, 10, 10, 10, 10]
+        sub_ind = list(range(len(self.subs))) # [0, 1, 2, ..., 49]
         for ii in range(len(self.subs)-sum(set_sizes)): 
-            set_sizes[ii]+=1
+            set_sizes[ii]+=1 # 不变
         if randomise:
             random.Random(4).shuffle(sub_ind)
 
@@ -100,9 +100,6 @@ class Dataset():
 
         return [Dataset(data_path=self.data_path, num_samples=self.num_samples, sample_range=self.sample_range, indices_in_use=idx_list) for idx_list in indices_sets]
 
-
-
-
     def __add__(self, other):
         # add two dataset
         if self.data_path != other.data_path:
@@ -114,14 +111,12 @@ class Dataset():
         indices_combined = self.indices_in_use + other.indices_in_use
         return Dataset(data_path = self.data_path, num_samples=self.num_samples, sample_range=self.sample_range, indices_in_use=indices_combined)
     
-
     def __len__(self):
         return self.num_indices
     
-
     def __getitem__(self, idx):
 
-        indices = self.indices_in_use[idx]
+        indices = self.indices_in_use[idx] # e.g. (6, 1)
 
         scans = [f for f in os.listdir(os.path.join(self.data_path, self.subs[indices[0]])) if f.endswith(".h5")]
         if len(scans) != 2:
@@ -138,8 +133,8 @@ class Dataset():
 
         else:
             # sample a sequence of frames
-            i_frames = self.frame_sampler(len(frames))
-            return frames[i_frames],tforms[i_frames],indices,scan_name
+            i_frames = self.frame_sampler(len(frames)) # e.g. (12, 13)
+            return frames[i_frames],tforms[i_frames],indices,scan_name # frames (ndarray) shape: (num_samples, H, W) tforms (ndarray) shape: (num_samples, 4, 4)
 
     def frame_sampler(self, n):
         """
@@ -151,7 +146,6 @@ class Dataset():
         idx_frames = random.sample(range(n0,n0+self.sample_range), self.num_samples)   # sample indices
         idx_frames.sort()
         return idx_frames
-    
 
     def write_json(self, jason_filename):
         # write the dataset information to a json file
@@ -163,7 +157,6 @@ class Dataset():
                 "sample_range": self.sample_range
                 }, f, ensure_ascii=False, indent=4)
         print("%s written." % jason_filename)
-    
     
     @staticmethod
     def read_json(jason_filename,num_samples = None):

@@ -3,6 +3,7 @@
 import argparse
 import os
 
+self_data_dir = '/raid/liujie/code_recon/data/ultrasound/Freehand_US_data_train_2025'
 
 class BaseOptions():
     def __init__(self):
@@ -10,9 +11,12 @@ class BaseOptions():
         self.initialized = False
 
     def initialize(self):
-        self.parser.add_argument('--DATA_PATH', type=str, default='data/frames_transfs', help='foldername of dataset path')
-        self.parser.add_argument('--FILENAME_CALIB', type=str, default='data/calib_matrix.csv',help='dataroot of calibration matrix')
-        self.parser.add_argument('--LANDMARK_PATH', type=str, default='data/landmarks', help='foldername of path for landmark')
+        # self.parser.add_argument('--DATA_PATH', type=str, default='data/frames_transfs', help='foldername of dataset path')
+        # self.parser.add_argument('--FILENAME_CALIB', type=str, default='data/calib_matrix.csv',help='dataroot of calibration matrix')
+        # self.parser.add_argument('--LANDMARK_PATH', type=str, default='data/landmarks', help='foldername of path for landmark')
+        self.parser.add_argument('--DATA_PATH', type=str, default='{}/frames_transfs'.format(self_data_dir), help='foldername of dataset path')
+        self.parser.add_argument('--FILENAME_CALIB', type=str, default='{}/calib_matrix.csv'.format(self_data_dir), help='dataroot of calibration matrix')
+        self.parser.add_argument('--LANDMARK_PATH', type=str, default='{}/landmarks'.format(self_data_dir), help='foldername of path for landmark')
         self.parser.add_argument('--gpu_ids', type=str, default='0', help='gpu id: e.g., 0,1,2...')
         self.initialized = True
 
