@@ -53,12 +53,12 @@ class Dataset():
                     print("Sampling all frames. sample_range is ignored.")
             else:
                 raise('num_samples should be greater than or equal to 2, or -1 for sampling all frames.')
-        self.num_samples = num_samples # 2 
+        self.num_samples = num_samples # 2 控制一次采样多少frame 
         
         if sample_range is None:
             self.sample_range = self.num_samples
         else:
-            self.sample_range = sample_range # 2 
+            self.sample_range = sample_range # 2 控制多少个frames可以用作采样
 
     def partition_by_ratio(self, ratios, randomise=False):
         # partition the dataset into train, val, and test sets

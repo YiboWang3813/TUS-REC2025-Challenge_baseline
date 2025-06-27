@@ -16,11 +16,11 @@ def build_model(opt,in_frames, pred_dim):
             stride       = model.features[0][0].stride, 
             padding      = model.features[0][0].padding, 
             bias         = model.features[0][0].bias
-        )
+        ) # 修改输入为2 
         model.classifier[1] = torch.nn.Linear(
             in_features   = model.classifier[1].in_features,
             out_features  = pred_dim
-        )
+        ) # 修改输出为6
 
     else:
         raise("Unknown model.")

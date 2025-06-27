@@ -62,12 +62,12 @@ val_loader = torch.utils.data.DataLoader(
 
 
 ## load calibration metric
-tform_calib_scale,tform_calib_R_T, tform_calib = read_calib_matrices(os.path.join(os.getcwd(),opt.FILENAME_CALIB))
+tform_calib_scale, tform_calib_R_T, tform_calib = read_calib_matrices(os.path.join(os.getcwd(),opt.FILENAME_CALIB))
 # Coordinates of four corner points in image coordinate system (in pixel)
-image_points = reference_image_points(dset_train[0][0].shape[1:],2).to(device)
+image_points = reference_image_points(dset_train[0][0].shape[1:],2).to(device) # (4, 4) 
 # dimension for prediction and label
-pred_dim = type_dim(opt.PRED_TYPE, image_points.shape[1], data_pairs.shape[0])
-label_dim = type_dim(opt.LABEL_TYPE, image_points.shape[1], data_pairs.shape[0])
+pred_dim = type_dim(opt.PRED_TYPE, image_points.shape[1], data_pairs.shape[0]) # 6
+label_dim = type_dim(opt.LABEL_TYPE, image_points.shape[1], data_pairs.shape[0]) # 12
 # transform label into another type, e.g., transform 4*4 transformation matrix into points
 transform_label = LabelTransform(
     opt.LABEL_TYPE,
@@ -99,8 +99,8 @@ transform_into_points = PointTransform(
 # network
 model = build_model(
     opt,
-    in_frames = opt.NUM_SAMPLES,
-    pred_dim = pred_dim,
+    in_frames = opt.NUM_SAMPLES, # 2 
+    pred_dim = pred_dim, # 6
     ).to(device)
 
 if opt.retrain:
@@ -127,7 +127,12 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
         frames, tforms = frames.to(device), tforms.to(device)
         tforms_inv = torch.linalg.inv(tforms)
         frames = frames/255
-        # transform label based on label type
+
+        # transform label based on label type 把tforms转换为label 
+        # tforms是一个batch的变换矩阵 每个batch里有num_samples个变换矩阵 (batch_size, num_samples, 4, 4) 
+        # tforms的变换关系是 从tracker tool space to camera space 这里camera space只是一个中介
+        # 通过他转换得到 在tracker tool space下 tool1到tool0的变换 再得到在image space下 image1到image0的变换
+        # 最后通过image points 得到在这个batch中 所有pair里 4个参考点的位置 shape (batch_size, num_pairs, 3, num_image_points)
         labels = transform_label(tforms, tforms_inv)
 
         optimiser.zero_grad()
@@ -180,7 +185,6 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
                 epoch_loss_val += loss_val.item()
                 epoch_dist_val += dist_val
 
-
             epoch_loss_val /= (step+1)
             epoch_dist_val /= (step+1)
 
@@ -196,5 +200,3 @@ for epoch in range(int(opt.retrain_epoch), int(opt.retrain_epoch)+opt.NUM_EPOCHS
         write_to_txt(opt, epoch, loss_dists)
 
         model.train(True)
-        
-        
