@@ -39,7 +39,7 @@ for (idx, ds) in enumerate(dset_folds):
     ds.write_json(os.path.join(os.getcwd(),opt.SAVE_PATH,"fold_{:02d}.json".format(idx))) 
 
 # train, val and test dataset
-dset_train = dset_folds[0]+dset_folds[1]+dset_folds[2]
+dset_train = dset_folds[0]+dset_folds[1]+dset_folds[2] # 调用Dataset的__add__方法
 dset_val = dset_folds[3]
 # dset_test = dset_folds[4]
 

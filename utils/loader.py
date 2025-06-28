@@ -68,6 +68,7 @@ class Dataset():
 
         """
         
+        # 归一化ratio比例 使它们的和为1
         num_sets = len(ratios) # 5 
         ratios = [ratios[i]/sum(ratios) for i in range(num_sets)] # [0.2, 0.2, 0.2, 0.2, 0.2]
         print("Partitioning into %d sets with a normalised ratios %s," %
@@ -76,24 +77,29 @@ class Dataset():
         # subject-level split
         set_sizes = [int(len(self.subs)*r) for r in ratios] # [10, 10, 10, 10, 10]
         sub_ind = list(range(len(self.subs))) # [0, 1, 2, ..., 49]
+        # 处理计算set_sizes中int存在的向下取整问题 
         for ii in range(len(self.subs)-sum(set_sizes)): 
-            set_sizes[ii]+=1 # 不变
+            set_sizes[ii]+=1
         if randomise:
-            random.Random(4).shuffle(sub_ind)
+            random.Random(4).shuffle(sub_ind) # 随机打乱sub_ind的顺序 
 
         # indices_in_use_list = [list(ele) for ele in self.indices_in_use]
         # indices_sets_sub = [sub_ind[n0:n0+n1] for (n0, n1) in zip([sum(set_sizes[:ii]) for ii in range(num_sets)], set_sizes)]  # get the index tuples for all sets
         
         # first element of self.indices_in_use
-        fir_ele = [i_idx[0] for i_idx in self.indices_in_use]
+        fir_ele = [i_idx[0] for i_idx in self.indices_in_use] # 所有索引中subject的索引号 e.g. [0,0,1,1,...,49,49]
+        # 遍历sub_ind 找到每个subject在first element中的索引位置 
+        # 得到的idx_all 是这样[[0, 1], [2, 3], [4, 5], ..., [98, 99]]
         idx_all = [np.where(np.array(fir_ele)==sub_ind[i])[0] for i in range(len(sub_ind))]
         idx_all = [l.tolist() for l in idx_all]
-        indices_sets= None
+        # 划分为多个子数据集 
+        indices_sets = None
         for (n0, n1) in zip([sum(set_sizes[:ii]) for ii in range(num_sets)], set_sizes):  # get the index tuples for all sets
-            idx_list = [x for xs in idx_all[n0:n0+n1] for x in xs]
-            if indices_sets==None:
+            # n0: [0, 10, 20, 30, 40] 表示每个组的开始索引 n1: [10, 10, 10, 10, 10]
+            idx_list = [x for xs in idx_all[n0:n0+n1] for x in xs] # 获得这一组的全部object索引
+            if indices_sets == None: # 第一个组 初始化indices_in_use 然后装入第一个组的全部subject-scan元组列表
                 indices_sets = [[self.indices_in_use[idx_list_i] for idx_list_i in idx_list]]
-            else:
+            else: # 后序的组依次添加
                 indices_sets.append([self.indices_in_use[idx_list_i] for idx_list_i in idx_list])
 
         print("at subject-level, with %s subjects." % (set_sizes))
@@ -109,7 +115,7 @@ class Dataset():
         if self.sample_range != other.sample_range:
             print('WARNING: found different sample_range - the first is used.')
         indices_combined = self.indices_in_use + other.indices_in_use
-        return Dataset(data_path = self.data_path, num_samples=self.num_samples, sample_range=self.sample_range, indices_in_use=indices_combined)
+        return Dataset(data_path=self.data_path, num_samples=self.num_samples, sample_range=self.sample_range, indices_in_use=indices_combined)
     
     def __len__(self):
         return self.num_indices
