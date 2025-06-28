@@ -13,11 +13,11 @@ class generate_ddf_from_label():
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = read_calib_matrices(data_path_calib)
         self.tform_calib_scale,self.tform_calib_R_T, self.tform_calib = self.tform_calib_scale.to(self.device),self.tform_calib_R_T.to(self.device), self.tform_calib.to(self.device)
         # image points coordinates in image coordinate system (in pixel), all pixel points
-        self.image_points = reference_image_points([h, w],[h, w]).to(self.device)
+        self.image_points = reference_image_points([h, w],[h, w]).to(self.device) # shape: (4, h*w)
 
     def calculate_GT_DDF(self,frames,tforms,landmark):
         # calculate DDFs of ground truth - label
-        frames, tforms = (torch.tensor(t).to(self.device)[None,...] for t in [frames, tforms])
+        frames, tforms = (torch.tensor(t).to(self.device)[None,...] for t in [frames, tforms]) # -> [1, N, H, W] and [1, N, 4, 4]
         tforms_inv = torch.linalg.inv(tforms)
         landmark = torch.from_numpy(landmark)
 
@@ -44,7 +44,7 @@ class generate_ddf_from_label():
             transformation_local (torch.Tensor): shape=(N-1, 4, 4), transformations from the current frame to the previous frame
         """
 
-        data_pairs_all = data_pairs_global(tforms.shape[1])[1:,:]
+        data_pairs_all = data_pairs_global(tforms.shape[1])[1:,:] # torch.tensor([[0, 1], [0, 2], ..., [0, N-1]]) (N-1, 2)
         # convert transformations (from tracker space to camera space) to transformations (from the current frame to the first frame).
         transform_label_global_all = LabelTransform(
             "transform",
@@ -54,10 +54,10 @@ class generate_ddf_from_label():
             tform_image_mm_to_tool=self.tform_calib_R_T,
             tform_image_pixel_to_mm = self.tform_calib_scale
             )
-        transformation_global = torch.squeeze(transform_label_global_all(tforms, tforms_inv))
+        transformation_global = torch.squeeze(transform_label_global_all(tforms, tforms_inv)) # (N-1, 4, 4) 
 
         # convert transformations (from tracker space to camera space) to transformations (from the current frame to the immediate previous frame).
-        data_pairs_local_all = data_pairs_local(tforms.shape[1]-1)
+        data_pairs_local_all = data_pairs_local(tforms.shape[1]-1) # torch.tensor([[0, 1], [1, 2], ..., [N-2, N-1]]) (N-1, 2)
         transform_label_local_all = LabelTransform(
             "transform",
             pairs=data_pairs_local_all,
@@ -66,6 +66,6 @@ class generate_ddf_from_label():
             tform_image_mm_to_tool=self.tform_calib_R_T,
             tform_image_pixel_to_mm = self.tform_calib_scale
             )
-        transformation_local = torch.squeeze(transform_label_local_all(tforms, tforms_inv))
+        transformation_local = torch.squeeze(transform_label_local_all(tforms, tforms_inv)) # (N-1, 4, 4)
 
         return transformation_global,transformation_local

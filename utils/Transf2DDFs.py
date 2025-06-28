@@ -22,12 +22,13 @@ def cal_global_ddfs(transformation_global,tform_calib_scale,image_points,landmar
 
     """
     # coordinates of points in current frame, with respect to the first frame 
-    global_allpts = torch.matmul(transformation_global,torch.matmul(tform_calib_scale,image_points))
+    global_allpts = torch.matmul(transformation_global,torch.matmul(tform_calib_scale,image_points)) # (N-1, 4, 307200)
     # calculate DDF in mm, displacement from current frame to the first frame
-    global_allpts_DDF = global_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(global_allpts.shape[0],-1,-1)
+    global_allpts_DDF = global_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(global_allpts.shape[0],-1,-1) # (N-1, 3, 307200)
     # calculate DDF for landmark
     # As the coordinates of landmark start from 1, which is designed to be consistent with the calibration process, here we need to minus 1
-    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy()
+    # 这里用landmark索引的时候还真是一次就能把3个轴都消掉只剩一个轴
+    global_landmark_DDF = global_allpts_DDF.reshape(global_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy() # (3, 100)
     global_allpts_DDF = global_allpts_DDF.numpy()
 
     return global_allpts_DDF,global_landmark_DDF
@@ -54,12 +55,12 @@ def cal_local_ddfs(transformation_local,tform_calib_scale,image_points,landmark,
     """
 
     # coordinates of points in current frame, with respect to the immediately previous frame 
-    local_allpts = torch.matmul(transformation_local,torch.matmul(tform_calib_scale,image_points))
+    local_allpts = torch.matmul(transformation_local,torch.matmul(tform_calib_scale,image_points)) # (N-1, 4, 307200)
     # calculate DDF in mm, displacement from current frame to the immediately previous frame
-    local_allpts_DDF = local_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(local_allpts.shape[0],-1,-1)
+    local_allpts_DDF = local_allpts[:,0:3,:]-torch.matmul(tform_calib_scale,image_points)[0:3,:].expand(local_allpts.shape[0],-1,-1) # (N-1, 3, 307200)
     # calculate DDF for landmark
     # As the coordinates of landmark start from 1, which is designed to be consistent with the calibration process, here we need to minus 1
-    local_landmark_DDF = local_allpts_DDF.reshape(local_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy()
+    local_landmark_DDF = local_allpts_DDF.reshape(local_allpts_DDF.shape[0],-1,h,w)[landmark[:,0]-1,:,landmark[:,2]-1,landmark[:,1]-1].T.numpy() # (3, 100)
     local_allpts_DDF = local_allpts_DDF.numpy()
     
     return local_allpts_DDF,local_landmark_DDF

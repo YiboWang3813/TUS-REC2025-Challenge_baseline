@@ -56,9 +56,9 @@ class Prediction():
 
     def generate_prediction_DDF(self, frames,landmark):
 
-        frames = torch.tensor(frames)[None,...].to(self.device)
+        frames = torch.tensor(frames)[None,...].to(self.device) # (1, N, H, W) 
         frames = frames/255
-        landmark = torch.from_numpy(landmark)
+        landmark = torch.from_numpy(landmark) # (100, 3)
 
         # predict global and local transformations
         transformation_global, transformation_local = self.cal_pred_transformations(frames)
@@ -73,6 +73,7 @@ class Prediction():
     def cal_pred_transformations(self,frames):
         """
         predict global and local transformations
+        网络直接预测出来的是local 通过链式法则累积得到的是global 
 
         Args:
             frames (torch.Tensor): shape=(1, N, H, W), all frames in the scan, where N denotes the number of frames in the scan, H and W denote the height and width of a frame. 
@@ -89,17 +90,17 @@ class Prediction():
         # global transformation, i.e., transformation from current frame to the first frame
         transformation_global = torch.zeros(frames.shape[1]-1,4,4)
 
-        prev_transf = torch.eye(4).to(self.device)
+        prev_transf = torch.eye(4).to(self.device) # 保存在global transformation中前一项的计算结果
         idx_f0 = 0  # this is the reference frame for network prediction
         Pair_index = 0 # select which pair of prediction to use
-        interval_pred = torch.squeeze(self.data_pairs[Pair_index])[1] - torch.squeeze(self.data_pairs[Pair_index])[0]
+        interval_pred = torch.squeeze(self.data_pairs[Pair_index])[1] - torch.squeeze(self.data_pairs[Pair_index])[0] # 一般是1
 
         while True:
             with torch.no_grad():  
-                frames_sub = frames[:,idx_f0:idx_f0 + self.parameters['NUM_SAMPLES'], ...]
-                outputs = self.model(frames_sub)
+                frames_sub = frames[:,idx_f0:idx_f0 + self.parameters['NUM_SAMPLES'], ...] # (1, num_samples, H, W)
+                outputs = self.model(frames_sub) # (1, 6)
                 # transform prediction into 4*4 transformtion matrix, to be accumulated
-                preds_transf = self.transforms(outputs)[0,Pair_index,...] 
+                preds_transf = self.transforms(outputs)[0,Pair_index,...] # (4, 4)
                 transformation_local[idx_f0] = preds_transf
                 # calculate global transformation
                 prev_transf = self.transform_accumulation(prev_transf,preds_transf)
