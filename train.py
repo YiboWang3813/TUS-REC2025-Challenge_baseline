@@ -14,6 +14,7 @@ from utils.funs import *
 
 
 opt = TrainOptions().parse()
+print(opt.SAVE_PATH) 
 writer = SummaryWriter(os.path.join(os.getcwd(),opt.SAVE_PATH))
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_ids
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

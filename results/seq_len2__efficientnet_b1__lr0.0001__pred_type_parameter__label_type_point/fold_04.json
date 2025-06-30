@@ -1,5 +1,5 @@
 {
-    "data_path": "data/frames_transfs",
+    "data_path": "/raid/liujie/code_recon/data/ultrasound/Freehand_US_data_train_2025/frames_transfs",
     "indices_in_use": [
         [
             1,
