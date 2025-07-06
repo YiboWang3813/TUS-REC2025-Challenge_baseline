@@ -47,7 +47,10 @@ def get_transforms_image_mm(tforms, pairs, tforms_image_mm_to_tool):
 
     return tforms_image1_to_image0_mm
 
-def params_to_transforms(params):
+def params_to_transforms(params, num_pairs):
+    if len(list(params.shape)) == 2: 
+        params = params.reshape(params.shape[0], num_pairs, -1) 
+
     # params: (B, N, 6) -> (rx, ry, rz, tx, ty, tz)
     matrix3x3 = pytorch3d.transforms.euler_angles_to_matrix(params[..., :3], 'ZYX')  # (B, N, 3, 3)
     translation = params[..., 3:].unsqueeze(-1)  # (B, N, 3, 1)
@@ -64,3 +67,58 @@ def params_to_transforms(params):
 def accumulate_transforms_image_mm(tforms_image1_to_image0_mm, tforms_image2_to_image1_mm): 
     tforms_image2_to_image0_mm = torch.matmul(tforms_image1_to_image0_mm, tforms_image2_to_image1_mm)
     return tforms_image2_to_image0_mm
+
+def get_network_pred_transforms(frames, network, data_pairs, num_samples):
+    """
+    Predict relative (local) and cumulative (global) transforms from a sequence of frames using a neural network.
+    
+    Assumes only the first pair in `data_pairs` is used repeatedly (i.e., fixed interval).
+    
+    Args:
+        frames (torch.Tensor): shape=(1, N, H, W), input image sequence with batch size = 1
+        network (nn.Module): model that takes a sequence of frames and outputs transform parameters
+        data_pairs (torch.Tensor): shape=(M, 2), first row [f0, f1] determines the sampling interval
+        num_samples (int): number of frames passed to the network at each step
+
+    Returns:
+        tforms_global (torch.Tensor): shape=(N-1, 4, 4), transform from each frame to the first frame
+        tforms_local (torch.Tensor): shape=(N-1, 4, 4), transform from current frame to previous frame
+    """
+    _, num_frames, _, _ = frames.shape
+    device = frames.device
+
+    tforms_global = torch.zeros((num_frames - 1, 4, 4), device=device)
+    tforms_local = torch.zeros((num_frames - 1, 4, 4), device=device)
+
+    # Initial global transform is identity
+    cumulative_transform = torch.eye(4, device=device)
+
+    # Use only the first pair to determine sampling interval
+    interval = data_pairs[0, 1] - data_pairs[0, 0]
+    frame_idx = 0
+
+    while frame_idx + num_samples <= num_frames:
+        with torch.no_grad():
+            # Extract a window of frames: shape=(1, num_samples, H, W)
+            frame_window = frames[:, frame_idx:frame_idx + num_samples, :, :]
+
+            # Predict transform parameters from the network
+            params = network(frame_window)
+
+            # Convert to 4x4 transformation matrix
+            relative_transform = params_to_transforms(params, num_samples - 1)[0, 0, :, :]  # (4, 4)
+
+            # Store local transform and update global transform
+            tforms_local[frame_idx] = relative_transform
+            cumulative_transform = accumulate_transforms_image_mm(cumulative_transform, relative_transform)
+            tforms_global[frame_idx] = cumulative_transform
+
+        frame_idx += interval
+
+    # Fill the remaining frames with identity or last global transform
+    if frame_idx < num_frames - 1:
+        num_remaining = num_frames - 1 - frame_idx
+        tforms_local[frame_idx:] = torch.eye(4, device=device).expand(num_remaining, 4, 4)
+        tforms_global[frame_idx:] = cumulative_transform.expand(num_remaining, 4, 4)
+
+    return tforms_global, tforms_local
