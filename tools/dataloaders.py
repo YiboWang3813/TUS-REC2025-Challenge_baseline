@@ -5,7 +5,7 @@ import random
 from torch.utils.data import Dataset
 
 class FreehandUSRecDataset2025(Dataset):
-    def __init__(self, src_dir, n_choices, mode='train'):
+    def __init__(self, src_dir, n_choices, mode='train', transforms=None):
         """
         Args:
             src_dir (str): root directory containing 'frames_transfs'
@@ -32,6 +32,8 @@ class FreehandUSRecDataset2025(Dataset):
                     self.object_paths.append(path)
                 else:
                     print(f"Warning: {path} not found.")
+        
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.object_paths)
@@ -50,6 +52,9 @@ class FreehandUSRecDataset2025(Dataset):
         start = random.randint(0, N - n)
         subvolume = frames[start:start + n]           # (n, H, W)
         subtforms = tforms[start:start + n]           # (n, 4, 4)
+
+        if self.transforms is not None: 
+            subvolume = self.transforms(subvolume)
 
         return subvolume, subtforms, n
 
