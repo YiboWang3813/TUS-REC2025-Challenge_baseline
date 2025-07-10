@@ -64,3 +64,12 @@ class FramePairModel(nn.Module):
         out = self.regressor(features)           # (B*(N-1), 6)
         out = out.view(B, N - 1, -1)              # (B, N-1, 6)
         return out
+
+
+def build_network(args): 
+    net = None 
+    if args.network_name == 'frame_pair_model': 
+        net = FramePairModel() 
+    else: 
+        raise NotImplementedError(f'{args.network_name} has not been implemented') 
+    return net 
