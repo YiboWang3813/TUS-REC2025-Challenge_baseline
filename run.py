@@ -44,7 +44,7 @@ def train(args):
     dataset_valid = FreehandUSRecDataset2025(args.dataset_dir, [2], mode='validate', transform=common_transforms)
 
     # Load calibration matrices
-    calib_path = os.path.join(args.dataset_dir, 'calib_mat.csv')  # TODO: Confirm this path is correct
+    calib_path = os.path.join(args.dataset_dir, 'calib_matrix.csv') 
     tform_image_pixel_to_mm, tform_image_mm_to_tool = read_calibration_matrices(calib_path)
     tform_image_pixel_to_mm = tform_image_pixel_to_mm.to(device)
     tform_image_mm_to_tool = tform_image_mm_to_tool.to(device)
