@@ -33,49 +33,86 @@ class PointDistance:
             return dists.mean()
 
 
-class PCCLoss(nn.Module):
+def mask_valid_entries_matrix(y_pred: torch.Tensor, y_true: torch.Tensor, lengths: torch.Tensor):
     """
-    Pearson Correlation Coefficient loss.
-
+    Extract valid entries (B, N-1, 4, 4) → (total_valid, 4, 4)
     Args:
-        split_dof (bool): If True, compute PCC separately over each of the 6 DoF and average.
+        y_pred: (B, max_n-1, 4, 4)
+        y_true: (B, max_n-1, 4, 4)
+        lengths: (B,) number of valid frames
+    Returns:
+        y_pred_valid, y_true_valid: (total_valid, 4, 4)
     """
-    def __init__(self, split_dof: bool = False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.split_dof = split_dof
+    B, max_n, _, _ = y_pred.shape
+    mask = torch.zeros((B, max_n), dtype=torch.bool, device=y_pred.device)
+    for i in range(B):
+        n = lengths[i].item()
+        if n > 1:
+            mask[i, :n - 1] = True
+    return y_pred[mask], y_true[mask]
 
-    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+
+class MaskedMSELoss(nn.Module):
+    """
+    MSE loss on 4x4 transformation matrices with masking.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            y_pred: Tensor of shape (B, N-1, 6)
-            y_true: Tensor of shape (B, N-1, 6)
+            y_pred: (B, N-1, 4, 4)
+            y_true: (B, N-1, 4, 4)
+            lengths: (B,)
         Returns:
-            loss: scalar loss = 1 - PCC
+            scalar loss
         """
+        y_pred_valid, y_true_valid = mask_valid_entries_matrix(y_pred, y_true, lengths)
+        return torch.mean((y_pred_valid - y_true_valid) ** 2)
 
-        def pcc_func(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-            """
-            Compute Pearson correlation coefficient between two tensors.
-            """
+
+class MaskedPCCLoss(nn.Module):
+    """
+    PCC loss on 4x4 transformation matrices with masking.
+    """
+    def __init__(self, split_elements: bool = False, *args, **kwargs):
+        """
+        Args:
+            split_elements (bool): compute PCC per-matrix-entry and average
+        """
+        super().__init__(*args, **kwargs)
+        self.split_elements = split_elements
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            y_pred: (B, N-1, 4, 4)
+            y_true: (B, N-1, 4, 4)
+            lengths: (B,)
+        Returns:
+            loss: scalar
+        """
+        y_pred_valid, y_true_valid = mask_valid_entries_matrix(y_pred, y_true, lengths)
+        # flatten to (num_valid, 16)
+        y_pred_flat = y_pred_valid.view(y_pred_valid.shape[0], -1)
+        y_true_flat = y_true_valid.view(y_true_valid.shape[0], -1)
+
+        def pcc_func(x, y):
             xy = x * y
             mean_x = x.mean()
             mean_y = y.mean()
             cov_xy = xy.mean() - mean_x * mean_y
-
             std_x = x.std()
             std_y = y.std()
+            return cov_xy / (std_x * std_y + 1e-8)
 
-            pcc = cov_xy / (std_x * std_y + 1e-8)  # avoid divide-by-zero
-            return pcc
-
-        if self.split_dof:
-            # Compute PCC for each DoF dimension and average
+        if self.split_elements:
             pcc_total = 0
-            for i in range(y_true.shape[-1]):
-                pcc_total += pcc_func(y_true[..., i], y_pred[..., i])
-            pcc_mean = pcc_total / y_true.shape[-1]
+            for i in range(y_true_flat.shape[-1]):
+                pcc_total += pcc_func(y_true_flat[:, i], y_pred_flat[:, i])
+            pcc_mean = pcc_total / y_true_flat.shape[-1]
         else:
-            # Flatten all values and compute single PCC
-            pcc_mean = pcc_func(y_true.flatten(), y_pred.flatten())
+            pcc_mean = pcc_func(y_true_flat.flatten(), y_pred_flat.flatten())
 
         return 1 - pcc_mean

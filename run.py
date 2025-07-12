@@ -5,91 +5,16 @@ import random
 import argparse 
 from torch.utils.data import DataLoader
 
-
 from tools.dataloaders import FreehandUSRecDataset2025, pad_collate_fn 
-from tools.data_transforms import * 
-
+from tools.data_transforms import ComposeTransform, NormalizeTransform, DownsampleTransform 
 from tools.networks import build_network 
-from tools.losses import * 
+from tools.losses import MaskedMSELoss, MaskedPCCLoss, PointDistance 
+from tools.transforms import get_reference_image_points
+from tools.losses import MaskedMSELoss, MaskedPCCLoss 
+from tools.mics import read_calibration_matrices, get_batch_size_for_n, get_n_choices_for_epoch 
+from tools.tb_writers import TensorboardWriter 
 
-from tools.transforms import 
-
-
-def get_parsed_arguments(parser: argparse.ArgumentParser): 
-    parser.add_argument('--dataset_dir', type=str, default='/raid/liujie/code_recon/data/ultrasound/Freehand_US_data_train_2025', help='path to store dataset')
-    parser.add_argument('--checkpoints_dir', type='str', default='/raid/liujie/code_recon/checkpoints', help='path to store trained weights and metrics')
-    parser.add_argument('--exp_dir', type=str, default='', help='experiment dir decided by exp name and checkpoints dir')
-    
-    parser.add_argument('--network_name', type='str', default='frame_pair_model', help='name to choose network') 
-
-    parser.add_argument('--batch_size', type=int, default=1, help='initial batch size') 
-    
-    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate') 
-    parser.add_argument('--n_epochs', type=int, default=30, help='number of training epochs') 
-    parser.add_argument('--freq_info', type=int, default=10, help='how many epochs to print info once') 
-    parser.add_argument('--freq_save', type=int, default=10, help='how many epochs to save networks weights once')
-    parser.add_argument('--freq_val', type=int, default=10, help='how many epochs to validate once') 
-
-    args = parser.parse_args() 
-
-    return args 
-
-
-def get_exp_name(args): 
-    exp_name = '' 
-    exp_name += f'network_{args.network_name}-epochs_{args.n_epochs}'
-    return exp_name 
-
-
-def get_n_choices_for_epoch(epoch):
-    if epoch < 5:
-        return [2]
-    elif epoch < 10:
-        return [2, 4]
-    elif epoch < 15:
-        return [2, 4, 8]
-    elif epoch < 20: 
-        return [2, 4, 8, 16]
-    elif epoch < 25: 
-        return [2, 4, 8, 16, 32]
-
-
-def get_batch_size_for_n(n, base_batch=8, base_n=16):
-    return max(1, base_batch * base_n // n)
-
-
-def train_one_epoch(args, dataloader, network, optimizer, criterion_loss, criterion_metric, device): 
-    this_epoch_loss, this_epoch_dist = 0, 0 
-    for step, (frames, tforms, _) in enumerate(dataloader):
-        frames, tforms = frames.to(device), tforms.to(device)
-
-        # transform label based on label type 把tforms转换为label 
-        # tforms是一个batch的变换矩阵 每个batch里有num_samples个变换矩阵 (batch_size, num_samples, 4, 4) 
-        # tforms的变换关系是 从tracker tool space to camera space 这里camera space只是一个中介
-        # 通过他转换得到 在tracker tool space下 tool1到tool0的变换 再得到在image space下 image1到image0的变换
-        # 最后通过image points 得到在这个batch中 所有pair里 4个参考点的位置 shape (batch_size, num_pairs, 3, num_image_points)
-        labels = transform_label(tforms, tforms_inv)
-
-        optimiser.zero_grad()
-        # model prediction
-        outputs = model(frames)
-        # transform prediction according to label type
-        preds = transform_prediction(outputs)
-        # calculate loss
-        loss = criterion(preds, labels)
-        loss.backward()
-        optimiser.step()
-
-        # transfrom prediction and label into points, for metric calculation
-        preds_pts = transform_into_points(preds.data)
-        labels_pts = transform_into_points(labels)
-        dist = metrics(preds_pts, labels_pts).detach()
-    
-        train_epoch_loss += loss.item()
-        train_epoch_dist += dist
-        
-    train_epoch_loss /= (step + 1)
-    train_epoch_dist /= (step + 1)
+from engines import train_one_epoch, validate_one_epoch 
 
 
 def train(args):
@@ -97,8 +22,13 @@ def train(args):
     # build network, criterion, optimizer 
     network = build_network(args) 
     network.to(device) 
-    criterion_loss = torch.nn.MSELoss() 
+
+    criterion_loss_mse = MaskedMSELoss() 
+    criterion_loss_pcc = MaskedPCCLoss() 
+
     criterion_metric = PointDistance()
+    ref_points = get_reference_image_points([int(n) for n in args.image_shape.split(',')], 2) 
+
     optimizer = torch.optim.Adam(network.parameters(), lr=args.lr) 
     print(f'build network, name: {args.network_name}, criterion and optimizer done') 
 
@@ -112,8 +42,18 @@ def train(args):
         DownsampleTransform(2),
         NormalizeTransform(),
     ])
-    dataset_valid = FreehandUSRecDataset2025(args.dataset_dir, [2], 'validate', transforms_valid)
+    dataset_valid = FreehandUSRecDataset2025(args.dataset_dir, [2], 'validate', transforms_valid) 
 
+    # load necessary global tranforms 
+    calib_path = os.path.join(args.src_dir, 'calib_mat.csv') # TODO 检查这个路径  
+    tform_image_pixel_to_mm, tform_image_mm_to_tool = read_calibration_matrices(calib_path) 
+    tform_image_pixel_to_mm = tform_image_pixel_to_mm.to(device) 
+    tform_image_mm_to_tool = tform_image_mm_to_tool.to(device) 
+
+    # initialize tensorboard writer 
+    writer = TensorboardWriter(args.exp_dir)  
+
+    best_metric_valid = 1e10 
     for epoch in range(args.n_epochs): 
         # build specific dataloader for this epoch 
         dataset_train.n_choices = get_n_choices_for_epoch(epoch) 
@@ -125,16 +65,73 @@ def train(args):
 
         print(f"Epoch {epoch} | n_choices: {dataset_train.n_choices} | batch_size: {batch_size}")
 
-        train_one_epoch(args, dataloader_train, network, optimizer,
-                        criterion_loss, criterion_metric, device) 
+        loss_train, metric_train = train_one_epoch(args, dataloader_train, network, optimizer,
+                                                    criterion_loss_mse, criterion_loss_pcc, 
+                                                    criterion_metric, ref_points, 
+                                                    tform_image_pixel_to_mm, tform_image_mm_to_tool, 
+                                                    device) 
+        
+        writer.print_info(epoch, loss_train, metric_train, 'train') 
 
+        if epoch % args.freq_val == 0: 
+            # Build dataloader for validation
+            dataset_valid.n_choices = get_n_choices_for_epoch(epoch)  # 如果你希望验证集也支持不同长度，可以保留这一句
+            n_sample_val = random.choice(dataset_valid.n_choices)      # 随机选择一个片段长度
+            batch_size_val = get_batch_size_for_n(n_sample_val)      # 根据长度设置验证 batch size
 
+            dataloader_val = DataLoader(
+                dataset_valid,
+                batch_size=batch_size_val,
+                shuffle=False,  # 验证集不打乱顺序
+                collate_fn=pad_collate_fn
+            )
 
+            print(f"[VALID] Epoch {epoch} | n_choices: {dataset_valid.n_choices} | batch_size: {batch_size_val}")
 
-     
+            loss_valid, metric_valid = validate_one_epoch(args, dataloader_val, network, 
+                                                          criterion_loss_mse, criterion_loss_pcc, 
+                                                          criterion_metric, ref_points, 
+                                                          tform_image_pixel_to_mm, tform_image_mm_to_tool, device) 
+
+            writer.print_info(epoch, loss_valid, metric_valid, 'valid') 
+
+            # Save model and add scalars per validation epoch 
+            writer.save_network(network, args.network_name, f'epoch_{epoch}') 
+            writer.add_scalars({
+                'loss_train': loss_train.item(), 'dist_train': metric_train.item(), 
+                'loss_valid': loss_valid.item(), 'dist_valid': metric_valid.item(), 
+            }, epoch)  
+
+            # Re-compute best validation metric and save the best network 
+            if metric_valid < best_metric_valid: 
+                best_metric_valid = metric_valid 
+                writer.save_network(network, args.network_name, 'best') 
+            
 
 if __name__ == '__main__': 
+    # set arguments 
     parser = argparse.ArgumentParser() 
-    args = get_parsed_arguments(parser) 
-    exp_name = get_exp_name(args) 
+    parser.add_argument('--dataset_dir', type=str, default='/raid/liujie/code_recon/data/ultrasound/Freehand_US_data_train_2025', help='path to store dataset')
+    parser.add_argument('--checkpoints_dir', type='str', default='/raid/liujie/code_recon/checkpoints', help='path to store trained weights and metrics')
+    parser.add_argument('--exp_dir', type=str, default='', help='experiment dir decided by exp name and checkpoints dir')
+    parser.add_argument('--image_shape', type=str, default='480,640', help='shape of image, (height, width)') 
+    
+    parser.add_argument('--network_name', type='str', default='frame_pair_model', help='name to choose network') 
+
+    parser.add_argument('--batch_size', type=int, default=1, help='initial batch size') 
+    
+    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate') 
+    parser.add_argument('--n_epochs', type=int, default=30, help='number of training epochs') 
+    parser.add_argument('--freq_info', type=int, default=10, help='how many epochs to print info once') 
+    parser.add_argument('--freq_save', type=int, default=10, help='how many epochs to save networks weights once')
+    parser.add_argument('--freq_val', type=int, default=10, help='how many epochs to validate once') 
+
+    args = parser.parse_args()  
+
+    # set exp name 
+    exp_name = '' 
+    exp_name += f'network_{args.network_name}-epochs_{args.n_epochs}'
+
     args.exp_dir = os.path.join(args.checkpoints_dir, exp_name) 
+
+    train(args) 

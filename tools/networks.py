@@ -1,19 +1,21 @@
 import torch
 import torch.nn as nn
 from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+from torch.nn.utils.rnn import pad_sequence
+
 
 class FramePairModel(nn.Module):
     def __init__(self, backbone_name='efficientnet_b0', pred_dim=6):
         super().__init__()
 
-        # 加载 EfficientNet 预训练模型
+        # Load EfficientNet backbone
         if backbone_name == 'efficientnet_b0':
             weights = EfficientNet_B0_Weights.DEFAULT
             model = efficientnet_b0(weights=weights)
         else:
-            raise ValueError("Only efficientnet_b0 is currently supported.")
+            raise ValueError("Only efficientnet_b0 is supported.")
 
-        # 修改第一层输入通道为2，保留其余权重
+        # Modify first conv to accept 2-channel input
         conv1 = model.features[0][0]
         new_conv = nn.Conv2d(
             in_channels=2,
@@ -23,53 +25,58 @@ class FramePairModel(nn.Module):
             padding=conv1.padding,
             bias=conv1.bias is not None
         )
-        # 用 pretrained conv 权重初始化前两个通道
         with torch.no_grad():
             new_conv.weight[:, :2] = conv1.weight[:, :2]
             if conv1.in_channels > 2:
-                # 多余通道初始化为0或均值（optional）
-                new_conv.weight[:, 2:] = 0
+                new_conv.weight[:, 2:] = 0  # zero-init unused channels
 
         model.features[0][0] = new_conv
 
-        # 去掉分类器，只保留特征提取部分
+        # Encoder and regressor
         self.encoder = nn.Sequential(
             model.features,
-            nn.AdaptiveAvgPool2d(1)  # 输出 shape: (B*(N-1), C, 1, 1)
+            nn.AdaptiveAvgPool2d(1)  # -> (B*(N-1), C, 1, 1)
         )
-
-        self.feature_dim = model.classifier[1].in_features  # e.g. 1280
+        self.feature_dim = model.classifier[1].in_features  # e.g., 1280
         self.regressor = nn.Sequential(
-            nn.Flatten(),               # (B*(N-1), feature_dim)
+            nn.Flatten(),               # -> (B*(N-1), feature_dim)
             nn.Linear(self.feature_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, pred_dim)   # 输出变换参数，如 (B, N-1, 6)
+            nn.Linear(128, pred_dim)   # -> (B*(N-1), 6)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: Tensor of shape (B, N, H, W)
+            x: (B, N, H, W) padded input volume
+            lengths: (B,) actual valid frame count for each sample
         Returns:
-            out: Tensor of shape (B, N-1, 6)
+            out: (B, max(N_i - 1), 6) with padding
         """
         B, N, H, W = x.shape
+        preds = []
 
-        img1 = x[:, :-1]  # (B, N-1, H, W)
-        img2 = x[:, 1:]   # (B, N-1, H, W)
-        pairs = torch.stack([img1, img2], dim=2)  # (B, N-1, 2, H, W)
-        pairs = pairs.view(B * (N - 1), 2, H, W)  # (B*(N-1), 2, H, W)
+        for i in range(B):
+            n = lengths[i].item()
+            if n < 2:
+                raise ValueError(f"Sample {i} has less than 2 valid frames.")
 
-        features = self.encoder(pairs)           # (B*(N-1), C, 1, 1)
-        out = self.regressor(features)           # (B*(N-1), 6)
-        out = out.view(B, N - 1, -1)              # (B, N-1, 6)
-        return out
+            # (n-1, H, W) pairs: (img_t, img_{t+1})
+            img1 = x[i, :n - 1]
+            img2 = x[i, 1:n]
+            pair = torch.stack([img1, img2], dim=1)  # (n-1, 2, H, W)
+
+            features = self.encoder(pair)            # (n-1, C, 1, 1)
+            out = self.regressor(features)           # (n-1, 6)
+            preds.append(out)
+
+        # Pad all to same shape (B, max_n-1, 6)
+        preds_padded = pad_sequence(preds, batch_first=True)  # (B, max_n-1, 6)
+        return preds_padded
 
 
 def build_network(args): 
-    net = None 
     if args.network_name == 'frame_pair_model': 
-        net = FramePairModel() 
+        return FramePairModel() 
     else: 
-        raise NotImplementedError(f'{args.network_name} has not been implemented') 
-    return net 
+        raise NotImplementedError(f'{args.network_name} is not implemented.')
