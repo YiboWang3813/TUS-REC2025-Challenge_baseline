@@ -77,12 +77,14 @@ def main():
         landmarks = torch.from_numpy(landmarks).to(device)                 # shape: (100, 3)
 
         # Compute GT DDFs
-        ddfs_gt = get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_image_pixel_to_mm, all_ref_points, landmarks)
+        ddfs_gt = get_ddfs_from_gt(
+            tforms, tform_image_mm_to_tool, tform_image_pixel_to_mm, all_ref_points, landmarks
+        )
 
         # Compute predicted DDFs
         start_time = time.time()
         ddfs_pred = get_ddfs_from_network_pred(
-            frames, network, [], 2, tform_image_pixel_to_mm, all_ref_points, landmarks
+            frames, network, 2, 8, tform_image_pixel_to_mm, all_ref_points, landmarks 
         )
         end_time = time.time()
         infer_time = end_time - start_time

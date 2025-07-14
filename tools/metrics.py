@@ -4,8 +4,10 @@ from tools.transforms import get_transforms_image_mm, get_network_pred_transform
 def get_data_pairs_global(num_frames): 
     return torch.tensor([[0, n] for n in range(num_frames)])[1:, :]
 
+
 def get_data_pairs_local(num_frames): 
     return torch.tensor([[n,n+1] for n in range(num_frames-1)])
+
 
 def get_ddfs_for_all_and_landmarks(tforms, tform_calib_scale, image_points, landmarks, w=640, h=480):
     """
@@ -47,13 +49,14 @@ def get_ddfs_for_all_and_landmarks(tforms, tform_calib_scale, image_points, land
 
     return ddf_all, ddf_landmarks
 
-def get_ddfs_from_gt(tforms, tforms_image_mm_to_tool, tform_calib_scale, image_points, landmarks):
+
+def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale, image_points, landmarks):
     """
-    Compute both global and local DDFs (for all pixels and landmarks) using ground truth tool poses.
+    Compute DDFs from ground truth tool poses (both global and local).
 
     Args:
         tforms (torch.Tensor): shape=(B, N, 4, 4), ground truth tool poses in world space
-        tforms_image_mm_to_tool (torch.Tensor): shape=(4, 4), fixed transform from image mm space to tool space
+        tform_image_mm_to_tool (torch.Tensor): shape=(4, 4), fixed transform from image mm space to tool space
         tform_calib_scale (torch.Tensor): shape=(4, 4), pixel-to-mm scaling transform
         image_points (torch.Tensor): shape=(4, H*W), homogeneous pixel coordinates
         landmarks (torch.Tensor): shape=(L, 3), landmark coordinates: (frame_id in 1~N-1, x, y)
@@ -64,61 +67,82 @@ def get_ddfs_from_gt(tforms, tforms_image_mm_to_tool, tform_calib_scale, image_p
         ddf_all_local (np.ndarray): shape=(N-1, 3, H*W), local DDF for all pixels
         ddf_landmarks_local (np.ndarray): shape=(3, L), local DDF for landmarks
     """
-    num_frames = tforms.shape[1]
+    B, N = tforms.shape[:2]
+    device = tforms.device
 
-    # Global transforms: current → first
-    data_pairs_global = get_data_pairs_global(num_frames)
-    tforms_global = get_transforms_image_mm(tforms, data_pairs_global, tforms_image_mm_to_tool).squeeze(0)  # (N-1, 4, 4)
+    # Build data_pairs for global
+    data_pairs_global = get_data_pairs_global(N).unsqueeze(0).to(device)  # shape: (1, N-1, 2)
+    tforms_global = get_transforms_image_mm(
+        tforms,
+        tform_image_mm_to_tool,
+        data_pairs=data_pairs_global
+    ).squeeze(0)  # (N-1, 4, 4)
 
-    # Local transforms: current → previous
-    data_pairs_local = get_data_pairs_local(num_frames)
-    tforms_local = get_transforms_image_mm(tforms, data_pairs_local, tforms_image_mm_to_tool).squeeze(0)  # (N-1, 4, 4)
+    # Local uses lengths instead of data_pairs
+    lengths = torch.tensor([N], device=device)  # shape: (1,)
+    tforms_local = get_transforms_image_mm(
+        tforms,
+        tform_image_mm_to_tool,
+        lengths=lengths
+    ).squeeze(0)  # (N-1, 4, 4)
 
-    # Compute DDFs
+    # DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
         tforms_global, tform_calib_scale, image_points, landmarks
     )
-
     ddf_all_local, ddf_landmarks_local = get_ddfs_for_all_and_landmarks(
         tforms_local, tform_calib_scale, image_points, landmarks
     )
 
     return ddf_all_global, ddf_landmarks_global, ddf_all_local, ddf_landmarks_local
 
-def get_ddfs_from_network_pred(frames, network, data_pairs, num_samples, tform_calib_scale, image_points, landmarks):
+
+def get_ddfs_from_network_pred(frames, network, num_samples, infer_batch_size,
+                               tform_calib_scale, image_points, landmarks):
     """
-    Compute both global and local DDFs (for all pixels and landmarks) using predicted parameters from a neural network.
+    Compute both global and local DDFs (for all pixels and landmarks) using predicted transforms from a neural network.
 
     Args:
-        frames (torch.Tensor): shape=(1, N, H, W), input image sequence with batch size = 1
-        network (nn.Module): model that takes a sequence of frames and outputs relative transform parameters
-        data_pairs (torch.Tensor): shape=(M, 2), each row contains a pair of frame indices (used to determine interval)
-        num_samples (int): number of frames passed to the network at each inference step
-        tform_calib_scale (torch.Tensor): shape=(4, 4), pixel-to-mm scaling transform
-        image_points (torch.Tensor): shape=(4, H*W), homogeneous pixel coordinates
-        landmarks (torch.Tensor): shape=(L, 3), landmark coordinates: (frame_id in 1~N-1, x, y)
+        frames (torch.Tensor): shape=(1, N, H, W), input image sequence (batch size must be 1)
+        network (nn.Module): model that outputs relative transform parameters
+        num_samples (int): number of frames per inference chunk
+        infer_batch_size (int): number of chunks to process per forward pass
+        tform_calib_scale (torch.Tensor): (4, 4), pixel-to-mm transform
+        image_points (torch.Tensor): (4, H*W), homogeneous image grid
+        landmarks (torch.Tensor): (L, 3), (frame_id, x, y)
 
     Returns:
-        ddf_all_global (np.ndarray): shape=(N-1, 3, H*W), global DDF for all pixels
-        ddf_landmarks_global (np.ndarray): shape=(3, L), global DDF for landmarks
-        ddf_all_local (np.ndarray): shape=(N-1, 3, H*W), local DDF for all pixels
-        ddf_landmarks_local (np.ndarray): shape=(3, L), local DDF for landmarks
+        ddf_all_global (torch.Tensor): (N-1, 3, H*W), dense displacement field (global)
+        ddf_landmarks_global (torch.Tensor): (3, L), landmark DDFs (global)
+        ddf_all_local (torch.Tensor): (N-1, 3, H*W), dense displacement field (local)
+        ddf_landmarks_local (torch.Tensor): (3, L), landmark DDFs (local)
     """
-
-    # Predict global and local transforms using the neural network
-    tforms_global, tforms_local = get_network_pred_transforms(frames, network, data_pairs, num_samples)
-
-    # Compute dense displacement fields (DDFs) using global transforms
-    ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
-        tforms_global, tform_calib_scale, image_points, landmarks
+    # Predict global and local transforms
+    tforms_global, tforms_local = get_network_pred_transforms(
+        frames=frames,
+        network=network,
+        num_samples=num_samples,
+        infer_batch_size=infer_batch_size
     )
 
-    # Compute DDFs using local (frame-to-frame) transforms
+    # Compute global DDFs
+    ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
+        tforms=tforms_global,
+        tform_calib_scale=tform_calib_scale,
+        image_points=image_points,
+        landmarks=landmarks
+    )
+
+    # Compute local DDFs
     ddf_all_local, ddf_landmarks_local = get_ddfs_for_all_and_landmarks(
-        tforms_local, tform_calib_scale, image_points, landmarks
+        tforms=tforms_local,
+        tform_calib_scale=tform_calib_scale,
+        image_points=image_points,
+        landmarks=landmarks
     )
 
     return ddf_all_global, ddf_landmarks_global, ddf_all_local, ddf_landmarks_local
+
 
 def cal_dist(label, pred, mode='all'):
     """
@@ -146,6 +170,7 @@ def cal_dist(label, pred, mode='all'):
         dist = torch.sqrt(((label - pred) ** 2).sum(axis=0)).mean()
 
     return dist
+
 
 def normalize_metrics(ddfs_gt, ddfs_pred):
     """

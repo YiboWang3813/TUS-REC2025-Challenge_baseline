@@ -14,7 +14,7 @@ def train_one_epoch(args, dataloader, network, optimizer,
         frames, tforms, lengths = frames.to(device), tforms.to(device), lengths.to(device) 
 
         # Transform frame-level gt to pair-level label 
-        labels = get_transforms_image_mm(tforms, lengths, tform_image_mm_to_tool) 
+        labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths) 
 
         optimizer.zero_grad()
 
@@ -61,7 +61,7 @@ def validate_one_epoch(args, dataloader, network,
             lengths = lengths.to(device)
 
             # Get GT pairwise transforms
-            labels = get_transforms_image_mm(tforms, lengths, tform_image_mm_to_tool)
+            labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths)
 
             # Network forward
             outputs = network(frames)

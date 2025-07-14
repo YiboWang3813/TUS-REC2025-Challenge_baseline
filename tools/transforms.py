@@ -60,42 +60,52 @@ def transforms_to_points(tforms, image_points, tform_image_pixel_to_mm):
     return points_transformed[:, :, :3, :]  # shape: (B, N-1, 3, N)
 
 
-def get_transforms_image_mm(tforms, lengths, tform_image_mm_to_tool):
+def get_transforms_image_mm(
+    tforms: torch.Tensor,
+    tform_image_mm_to_tool: torch.Tensor,
+    lengths: torch.Tensor = None,
+    data_pairs: torch.Tensor = None,
+) -> torch.Tensor:
     """
-    Compute frame-to-frame transformation in image (mm) space.
+    Compute transforms between frame pairs in image mm space (either local or global depending on `data_pairs`).
 
     Args:
-        tforms: (B, N, 4, 4), per-frame tool-to-world transforms
-        lengths: (B,), each sample's valid frame count
-        tforms_image_mm_to_tool: (4, 4), fixed conjugate transform
+        tforms: (B, N, 4, 4), ground truth tool poses (tool→world)
+        tform_image_mm_to_tool: (4, 4), fixed matrix from image mm → tool
+        lengths: (B,), optional, number of valid frames per sample (only needed for local mode)
+        data_pairs: (B, M, 2), optional, for global transform: each row [i, j] means j→i
 
     Returns:
-        tforms_image1_to_image0_mm: (B, N-1, 4, 4), only up to lengths[i]-1 are valid per sample
+        tforms_imagej_to_imagei_mm: (B, M, 4, 4), image mm transforms j → i
     """
     B, N, _, _ = tforms.shape
-    tforms_inv = torch.linalg.inv(tforms)  # (B, N, 4, 4)
+    tform_tool_to_image_mm = torch.linalg.inv(tform_image_mm_to_tool)
+    tforms_inv = torch.linalg.inv(tforms)
 
-    # Prepare storage for output
-    tforms_image1_to_image0_mm = torch.zeros(B, N - 1, 4, 4, device=tforms.device, dtype=tforms.dtype)
+    if data_pairs is not None:
+        # Global (arbitrary) mode: use provided index pairs
+        M = data_pairs.shape[1]
+        result = torch.zeros((B, M, 4, 4), device=tforms.device, dtype=tforms.dtype)
 
-    # Inverse of image→tool matrix (shared for all)
-    tform_tool_to_image_mm = torch.linalg.inv(tform_image_mm_to_tool)  # (4, 4)
+        for b in range(B):
+            for m in range(M):
+                i, j = data_pairs[b, m]
+                T_toolj_to_tooli = torch.matmul(tforms_inv[b, i], tforms[b, j])
+                T_imagej_to_imagei = tform_tool_to_image_mm @ T_toolj_to_tooli @ tform_image_mm_to_tool
+                result[b, m] = T_imagej_to_imagei
 
-    for i in range(B):
-        n = lengths[i]
-        # Compute valid (n-1) pairs
-        tform_tool1_to_tool0 = torch.matmul(
-            tforms_inv[i, :n-1],    # world→tool0
-            tforms[i, 1:n]          # tool1→world
-        )  # shape: (n-1, 4, 4)
+    else:
+        # Local mode: adjacent frame pairs
+        assert lengths is not None, "lengths must be provided when data_pairs is None"
+        result = torch.zeros((B, N - 1, 4, 4), device=tforms.device, dtype=tforms.dtype)
 
-        # Convert from tool space to image space using conjugation:
-        # image1→image0 = T_tool→image @ T_tool1→tool0 @ T_image→tool
-        image1_to_image0_mm = tform_tool_to_image_mm @ tform_tool1_to_tool0 @ tform_image_mm_to_tool
+        for b in range(B):
+            n = lengths[b]
+            T_tool1_to_tool0 = torch.matmul(tforms_inv[b, :n - 1], tforms[b, 1:n])
+            T_image1_to_image0 = tform_tool_to_image_mm @ T_tool1_to_tool0 @ tform_image_mm_to_tool
+            result[b, :n - 1] = T_image1_to_image0
 
-        tforms_image1_to_image0_mm[i, :n-1] = image1_to_image0_mm
-
-    return tforms_image1_to_image0_mm
+    return result
 
 
 def params_to_transforms(params: torch.Tensor, lengths: torch.Tensor, fill_identity: bool = True) -> torch.Tensor:
@@ -133,61 +143,60 @@ def params_to_transforms(params: torch.Tensor, lengths: torch.Tensor, fill_ident
     return matrix4x4
 
 
-def accumulate_transforms_image_mm(tforms_image1_to_image0_mm, tforms_image2_to_image1_mm): 
-    tforms_image2_to_image0_mm = torch.matmul(tforms_image1_to_image0_mm, tforms_image2_to_image1_mm)
-    return tforms_image2_to_image0_mm
-
-def get_network_pred_transforms(frames, network, data_pairs, num_samples):
+def get_network_pred_transforms(frames: torch.Tensor, network: torch.nn.Module, num_samples: int, infer_batch_size: int = 16):
     """
-    Predict relative (local) and cumulative (global) transforms from a sequence of frames using a neural network.
-    
-    Assumes only the first pair in `data_pairs` is used repeatedly (i.e., fixed interval).
-    
+    Predict local and global transforms from an ultrasound image sequence using batched sliding windows.
+
     Args:
-        frames (torch.Tensor): shape=(1, N, H, W), input image sequence with batch size = 1
-        network (nn.Module): model that takes a sequence of frames and outputs transform parameters
-        data_pairs (torch.Tensor): shape=(M, 2), first row [f0, f1] determines the sampling interval
-        num_samples (int): number of frames passed to the network at each step
+        frames: (1, N, H, W), input sequence
+        network: model to predict 6D params from frame chunks
+        num_samples: number of frames in each chunk
+        infer_batch_size: number of chunks processed in one forward pass
 
     Returns:
-        tforms_global (torch.Tensor): shape=(N-1, 4, 4), transform from each frame to the first frame
-        tforms_local (torch.Tensor): shape=(N-1, 4, 4), transform from current frame to previous frame
+        tforms_global: (N-1, 4, 4)
+        tforms_local: (N-1, 4, 4)
     """
-    _, num_frames, _, _ = frames.shape
+    B, N, H, W = frames.shape
+    assert B == 1, "Only supports input batch size 1."
     device = frames.device
 
-    tforms_global = torch.zeros((num_frames - 1, 4, 4), device=device)
-    tforms_local = torch.zeros((num_frames - 1, 4, 4), device=device)
+    # Divide into chunks of size `num_samples`
+    chunk_list = []
+    valid_starts = []
+    for i in range(0, N - num_samples + 1, num_samples):
+        chunk = frames[:, i:i + num_samples]  # shape: (1, num_samples, H, W)
+        chunk_list.append(chunk)
+        valid_starts.append(i)
 
-    # Initial global transform is identity
-    cumulative_transform = torch.eye(4, device=device)
+    # Track results
+    tforms_global = torch.zeros((N - 1, 4, 4), device=device)
+    tforms_local = torch.zeros((N - 1, 4, 4), device=device)
+    cumulative = torch.eye(4, device=device)
+    idx = 0  # current position in output
 
-    # Use only the first pair to determine sampling interval
-    interval = data_pairs[0, 1] - data_pairs[0, 0]
-    frame_idx = 0
+    # Batch inference loop
+    with torch.no_grad():
+        for batch_start in range(0, len(chunk_list), infer_batch_size):
+            batch_chunks = torch.cat(chunk_list[batch_start:batch_start + infer_batch_size], dim=0)  # (B', num_samples, H, W)
+            lengths = torch.full((batch_chunks.shape[0],), num_samples - 1, dtype=torch.long, device=device)
+            pred_params = network(batch_chunks, lengths)  # (B', num_samples-1, 6)
+            pred_tforms = params_to_transforms(pred_params, lengths)  # (B', num_samples-1, 4, 4)
 
-    while frame_idx + num_samples <= num_frames:
-        with torch.no_grad():
-            # Extract a window of frames: shape=(1, num_samples, H, W)
-            frame_window = frames[:, frame_idx:frame_idx + num_samples, :, :]
+            for b in range(pred_tforms.shape[0]):
+                for j in range(num_samples - 1):
+                    if idx >= N - 1:
+                        break
+                    tform = pred_tforms[b, j]
+                    tforms_local[idx] = tform
+                    cumulative = torch.matmul(cumulative, tform) 
+                    tforms_global[idx] = cumulative
+                    idx += 1
 
-            # Predict transform parameters from the network
-            params = network(frame_window)
-
-            # Convert to 4x4 transformation matrix
-            relative_transform = params_to_transforms(params, num_samples - 1)[0, 0, :, :]  # (4, 4)
-
-            # Store local transform and update global transform
-            tforms_local[frame_idx] = relative_transform
-            cumulative_transform = accumulate_transforms_image_mm(cumulative_transform, relative_transform)
-            tforms_global[frame_idx] = cumulative_transform
-
-        frame_idx += interval
-
-    # Fill the remaining frames with identity or last global transform
-    if frame_idx < num_frames - 1:
-        num_remaining = num_frames - 1 - frame_idx
-        tforms_local[frame_idx:] = torch.eye(4, device=device).expand(num_remaining, 4, 4)
-        tforms_global[frame_idx:] = cumulative_transform.expand(num_remaining, 4, 4)
+    # Handle leftover (frames not covered by complete chunk)
+    if idx < N - 1:
+        num_pad = N - 1 - idx
+        tforms_local[idx:] = torch.eye(4, device=device).expand(num_pad, 4, 4)
+        tforms_global[idx:] = cumulative.expand(num_pad, 4, 4)
 
     return tforms_global, tforms_local
