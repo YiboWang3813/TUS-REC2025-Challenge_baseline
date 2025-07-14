@@ -113,7 +113,7 @@ def params_to_transforms(params: torch.Tensor, lengths: torch.Tensor, fill_ident
     Convert 6D params (Euler angles + translation) into 4x4 homogeneous matrices.
     Args:
         params: (B, max_n-1, 6) predicted params
-        lengths: (B,) actual number of valid pairs (n - 1) per sample
+        lengths: (B,) actual number of valid pairs per sample, directly from dataloader and need to minus 1
         fill_identity: if True, fill padded slots with identity; else zero
     Returns:
         matrix4x4: (B, max_n-1, 4, 4), per-frame transforms
@@ -133,12 +133,13 @@ def params_to_transforms(params: torch.Tensor, lengths: torch.Tensor, fill_ident
         if n == 0:
             continue  # skip invalid samples
 
-        param_i = params[i, :n]  # (n, 6)
-        R = tf.euler_angles_to_matrix(param_i[..., :3], convention='ZYX')  # (n, 3, 3)
-        t = param_i[..., 3:].unsqueeze(-1)                                # (n, 3, 1)
-        Rt = torch.cat([R, t], dim=2)                                     # (n, 3, 4)
-        bottom_row = torch.tensor([0, 0, 0, 1], dtype=dtype, device=device).view(1, 1, 4).expand(n, 1, 4)  # (n, 1, 4)
-        matrix4x4[i, :n] = torch.cat([Rt, bottom_row], dim=1)             # (n, 4, 4)
+        param_i = params[i, :n-1]  # (n, 6)
+        R = tf.euler_angles_to_matrix(param_i[..., :3], convention='ZYX')  # (n-1, 3, 3)
+        t = param_i[..., 3:].unsqueeze(-1)                                # (n-1, 3, 1)
+        Rt = torch.cat([R, t], dim=2)                                     # (n-1, 3, 4)
+        bottom_row = torch.tensor([0, 0, 0, 1], dtype=dtype, device=device).view(1, 1, 4).expand(n-1, 1, 4)  # (n-1, 1, 4)
+        # print(Rt.shape, bottom_row.shape)
+        matrix4x4[i, :n] = torch.cat([Rt, bottom_row], dim=1)             # (n-1, 4, 4)
 
     return matrix4x4
 

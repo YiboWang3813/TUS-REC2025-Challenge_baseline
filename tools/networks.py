@@ -10,8 +10,10 @@ class FramePairModel(nn.Module):
 
         # Load EfficientNet backbone
         if backbone_name == 'efficientnet_b0':
-            weights = EfficientNet_B0_Weights.DEFAULT
-            model = efficientnet_b0(weights=weights)
+            # weights = EfficientNet_B0_Weights.DEFAULT
+            model = efficientnet_b0(weights=None)  # 不加载权重
+            model.load_state_dict(torch.load('/raid/liujie/code_recon/checkpoints/efficientnet_b0_rwightman-3dd342df.pth')) 
+            # model.load_state_dict(torch.load("/raid/liujie/.cache/torch/hub/checkpoints/efficientnet_b0_rwightman-3dd342df.pth"), strict=False)
         else:
             raise ValueError("Only efficientnet_b0 is supported.")
 

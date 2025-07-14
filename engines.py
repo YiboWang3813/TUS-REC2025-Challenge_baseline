@@ -17,11 +17,11 @@ def train_one_epoch(args, dataloader, network, optimizer,
         labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths) 
 
         optimizer.zero_grad()
-        outputs = network(frames)
+        outputs = network(frames, lengths)
         preds = params_to_transforms(outputs, lengths) 
         
-        loss_mse = criterion_loss_mse(preds, labels) 
-        loss_pcc = criterion_loss_pcc(preds, labels) 
+        loss_mse = criterion_loss_mse(preds, labels, lengths) 
+        loss_pcc = criterion_loss_pcc(preds, labels, lengths) 
         loss = loss_mse + loss_pcc * 0.5   
         
         loss.backward()
@@ -58,11 +58,11 @@ def validate_one_epoch(args, dataloader, network,
             lengths = lengths.to(device)
 
             labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths)
-            outputs = network(frames)
+            outputs = network(frames, lengths)
             preds = params_to_transforms(outputs, lengths)
 
-            loss_mse = criterion_loss_mse(preds, labels)
-            loss_pcc = criterion_loss_pcc(preds, labels)
+            loss_mse = criterion_loss_mse(preds, labels, lengths)
+            loss_pcc = criterion_loss_pcc(preds, labels, lengths)
             loss = loss_mse + 0.5 * loss_pcc
 
             preds_pts = transforms_to_points(preds, ref_points, tform_image_pixel_to_mm)

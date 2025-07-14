@@ -30,7 +30,7 @@ def train(args):
 
     # Reference points in image space
     image_shape = [int(n) for n in args.image_shape.split(',')]
-    ref_points = get_reference_image_points(image_shape, density=2)
+    ref_points = get_reference_image_points(image_shape, density=2).to(device)
 
     print(f"[INFO] Network: {args.network_name} initialized.")
 
@@ -146,8 +146,8 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_dir', type=str, required=True, help='Path to dataset directory')
-    parser.add_argument('--checkpoints_dir', type=str, required=True, help='Directory to store checkpoints')
+    parser.add_argument('--dataset_dir', type=str, default='/raid/liujie/code_recon/data/ultrasound/Freehand_US_data_train_2025', help='Path to dataset directory')
+    parser.add_argument('--checkpoints_dir', type=str, default='/raid/liujie/code_recon/checkpoints', help='Directory to store checkpoints')
     parser.add_argument('--exp_dir', type=str, default='', help='Optional: override full experiment path')
     parser.add_argument('--image_shape', type=str, default='480,640', help='Image shape as H,W')
     parser.add_argument('--network_name', type=str, default='frame_pair_model')
