@@ -26,15 +26,15 @@ def read_calibration_matrices(calib_file_path: str):
 
 
 def get_n_choices_for_epoch(epoch):
-    if epoch < 5:
+    if epoch < 2:
         return [2]
-    elif epoch < 10:
+    elif epoch < 4:
         return [2, 4]
-    elif epoch < 15:
+    elif epoch < 6:
         return [2, 4, 8]
-    elif epoch < 20: 
+    elif epoch < 8: 
         return [2, 4, 8, 16]
-    elif epoch < 25: 
+    elif epoch < 10: 
         return [2, 4, 8, 16, 32]
 
 
