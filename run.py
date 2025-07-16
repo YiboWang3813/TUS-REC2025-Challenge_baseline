@@ -6,14 +6,14 @@ import torch
 from torch.utils.data import DataLoader
 
 # Dataset and transforms
-from tools.dataloaders import FullSweepFreehandUSDataset, pad_collate_fn
+from tools.dataloaders import FullSweepFreehandUSDataset
 from tools.data_transforms import ComposeTransform, NormalizeTransform, DownsampleTransform
 
 # Network and training tools
 from tools.networks import build_network
-from tools.losses import MaskedMSELoss, MaskedPCCLoss, PointDistance
+from tools.losses import PCCLoss, PointDistance
 from tools.transforms import get_reference_image_points
-from tools.mics import read_calibration_matrices, get_batch_size_for_n, get_n_choices_for_epoch
+from tools.mics import read_calibration_matrices, get_batch_size_for_n, get_n_for_epoch
 from tools.tb_writers import TensorboardWriter
 from engines import train_one_epoch, validate_one_epoch
 
@@ -23,8 +23,8 @@ def train(args):
 
     # Build model, loss functions, optimizer
     network = build_network(args).to(device)
-    criterion_loss_mse = MaskedMSELoss()
-    criterion_loss_pcc = MaskedPCCLoss()
+    criterion_loss_mse = torch.nn.MSELoss()
+    criterion_loss_pcc = PCCLoss()
     criterion_metric = PointDistance()
     optimizer = torch.optim.Adam(network.parameters(), lr=args.lr)
 
@@ -41,19 +41,19 @@ def train(args):
     ])
 
     # Use initial n_choices for dataset building
-    init_n_choices = get_n_choices_for_epoch(0)
+    init_n = get_n_for_epoch(0)
 
     # Build datasets with full subvolume sweep and fold split
     dataset_train = FullSweepFreehandUSDataset(
         src_dir=args.dataset_dir,
-        n_choices=init_n_choices,
+        n=init_n,
         fold=args.fold,
         mode='train',
         transforms=common_transforms
     )
     dataset_valid = FullSweepFreehandUSDataset(
         src_dir=args.dataset_dir,
-        n_choices=init_n_choices,
+        n=init_n,
         fold=args.fold,
         mode='validate',
         transforms=common_transforms
@@ -77,21 +77,19 @@ def train(args):
 
     for epoch in range(args.n_epochs):
         # Set n_choices and batch_size for current epoch
-        current_n_choices = get_n_choices_for_epoch(epoch)
-        dataset_train.update_n_choices_and_rebuild(current_n_choices)
-        dataset_valid.update_n_choices_and_rebuild(current_n_choices)
+        current_n = get_n_for_epoch(epoch)
+        dataset_train.update_n_and_rebuild(current_n)
+        dataset_valid.update_n_and_rebuild(current_n)
 
-        n_sample = random.choice(current_n_choices)
-        batch_size = get_batch_size_for_n(n_sample)
+        batch_size = get_batch_size_for_n(current_n)
 
         dataloader_train = DataLoader(
             dataset_train,
             batch_size=batch_size,
-            shuffle=True,
-            collate_fn=pad_collate_fn
+            shuffle=True
         )
 
-        print(f"[TRAIN] Epoch {epoch} | n_choices: {current_n_choices} | batch_size: {batch_size}")
+        print(f"[TRAIN] Epoch {epoch} | n: {current_n} | batch_size: {batch_size}")
 
         # Train one epoch
         loss_train, dist_train = train_one_epoch(
@@ -105,17 +103,15 @@ def train(args):
 
         # Run validation periodically
         if epoch % args.freq_val == 0:
-            n_sample_val = random.choice(current_n_choices)
-            batch_size_val = get_batch_size_for_n(n_sample_val)
+            batch_size_val = get_batch_size_for_n(current_n)
 
             dataloader_val = DataLoader(
                 dataset_valid,
                 batch_size=batch_size_val,
-                shuffle=False,
-                collate_fn=pad_collate_fn
+                shuffle=False
             )
 
-            print(f"[VALID] Epoch {epoch} | n_choices: {current_n_choices} | batch_size: {batch_size_val}")
+            print(f"[VALID] Epoch {epoch} | n: {current_n} | batch_size: {batch_size_val}")
 
             loss_valid, dist_valid = validate_one_epoch(
                 args, dataloader_val, network,
@@ -153,10 +149,10 @@ if __name__ == '__main__':
     parser.add_argument('--network_name', type=str, default='frame_pair_model')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--n_epochs', type=int, default=10)
-    parser.add_argument('--freq_info', type=int, default=10)
-    parser.add_argument('--freq_save', type=int, default=10)
-    parser.add_argument('--freq_val', type=int, default=2)
+    parser.add_argument('--n_epochs', type=int, default=30)
+    # parser.add_argument('--freq_info', type=int, default=10)
+    # parser.add_argument('--freq_save', type=int, default=10)
+    parser.add_argument('--freq_val', type=int, default=5)
     parser.add_argument('--fold', type=int, default=0, help='Fold index (0~4)')
 
     args = parser.parse_args()
