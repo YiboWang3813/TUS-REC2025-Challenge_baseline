@@ -24,5 +24,4 @@ class TensorboardWriter:
 
     def add_scalars(self, scalars_dict, epoch):
         for k, v in scalars_dict.items():
-            tag = 'loss' if 'loss' in k else 'dist' if 'dist' in k else 'metric'
-            self.writer.add_scalar(f'{tag}/{k}', v, epoch)
+            self.writer.add_scalar(f'{k}', v, epoch)
