@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
-from torch.nn.utils.rnn import pad_sequence
+from torchvision.models import efficientnet_b0
+# from torchvision.models import EfficientNet_B0_Weights  # 已禁用权重下载
 
 
 class FramePairModel(nn.Module):
@@ -10,10 +10,8 @@ class FramePairModel(nn.Module):
 
         # Load EfficientNet backbone
         if backbone_name == 'efficientnet_b0':
-            # weights = EfficientNet_B0_Weights.DEFAULT
-            model = efficientnet_b0(weights=None)  # 不加载权重
-            model.load_state_dict(torch.load('/raid/liujie/code_recon/checkpoints/efficientnet_b0_rwightman-3dd342df.pth')) 
-            # model.load_state_dict(torch.load("/raid/liujie/.cache/torch/hub/checkpoints/efficientnet_b0_rwightman-3dd342df.pth"), strict=False)
+            model = efficientnet_b0(weights=None)
+            model.load_state_dict(torch.load('/raid/liujie/code_recon/checkpoints/efficientnet_b0_rwightman-3dd342df.pth'))
         else:
             raise ValueError("Only efficientnet_b0 is supported.")
 
@@ -37,48 +35,43 @@ class FramePairModel(nn.Module):
         # Encoder and regressor
         self.encoder = nn.Sequential(
             model.features,
-            nn.AdaptiveAvgPool2d(1)  # -> (B*(N-1), C, 1, 1)
+            nn.AdaptiveAvgPool2d(1)
         )
-        self.feature_dim = model.classifier[1].in_features  # e.g., 1280
+        self.feature_dim = model.classifier[1].in_features
         self.regressor = nn.Sequential(
-            nn.Flatten(),               # -> (B*(N-1), feature_dim)
+            nn.Flatten(),
             nn.Linear(self.feature_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, pred_dim)   # -> (B*(N-1), 6)
+            nn.Linear(128, pred_dim)
         )
 
-    def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: (B, N, H, W) padded input volume
-            lengths: (B,) actual valid frame count for each sample
+            x: (B, N, H, W) input volume
         Returns:
-            out: (B, max(N_i - 1), 6) with padding
+            out: (B, N-1, 6)
         """
         B, N, H, W = x.shape
-        preds = []
+        if N < 2:
+            raise ValueError(f"Input sequence length N={N} must be at least 2.")
 
-        for i in range(B):
-            n = lengths[i].item()
-            if n < 2:
-                raise ValueError(f"Sample {i} has less than 2 valid frames.")
+        # Generate image pairs: (img_t, img_{t+1}) along N axis
+        img1 = x[:, :-1]  # (B, N-1, H, W)
+        img2 = x[:, 1:]   # (B, N-1, H, W)
+        pair = torch.stack([img1, img2], dim=2)  # (B, N-1, 2, H, W)
+        pair = pair.view(-1, 2, H, W)            # (B*(N-1), 2, H, W)
 
-            # (n-1, H, W) pairs: (img_t, img_{t+1})
-            img1 = x[i, :n - 1]
-            img2 = x[i, 1:n]
-            pair = torch.stack([img1, img2], dim=1)  # (n-1, 2, H, W)
+        # Forward pass
+        features = self.encoder(pair)            # (B*(N-1), C, 1, 1)
+        out = self.regressor(features)           # (B*(N-1), 6)
+        out = out.view(B, N - 1, -1)             # (B, N-1, 6)
 
-            features = self.encoder(pair)            # (n-1, C, 1, 1)
-            out = self.regressor(features)           # (n-1, 6)
-            preds.append(out)
-
-        # Pad all to same shape (B, max_n-1, 6)
-        preds_padded = pad_sequence(preds, batch_first=True)  # (B, max_n-1, 6)
-        return preds_padded
+        return out
 
 
-def build_network(args): 
-    if args.network_name == 'frame_pair_model': 
-        return FramePairModel() 
-    else: 
+def build_network(args):
+    if args.network_name == 'frame_pair_model':
+        return FramePairModel()
+    else:
         raise NotImplementedError(f'{args.network_name} is not implemented.')
