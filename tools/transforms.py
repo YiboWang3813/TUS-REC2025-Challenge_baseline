@@ -60,144 +60,130 @@ def transforms_to_points(tforms, image_points, tform_image_pixel_to_mm):
     return points_transformed[:, :, :3, :]  # shape: (B, N-1, 3, N)
 
 
-def get_transforms_image_mm(
-    tforms: torch.Tensor,
-    tform_image_mm_to_tool: torch.Tensor,
-    lengths: torch.Tensor = None,
-    data_pairs: torch.Tensor = None,
-) -> torch.Tensor:
+def get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs):
     """
-    Compute transforms between frame pairs in image mm space (either local or global depending on `data_pairs`).
+    Compute transforms from frame j to frame i in image-mm space, using tool→world poses.
 
     Args:
-        tforms: (B, N, 4, 4), ground truth tool poses (tool→world)
-        tform_image_mm_to_tool: (4, 4), fixed matrix from image mm → tool
-        lengths: (B,), optional, number of valid frames per sample (only needed for local mode)
-        data_pairs: (B, M, 2), optional, for global transform: each row [i, j] means j→i
+        tforms (Tensor): shape (B, N, 4, 4), Ground-truth tool poses for each frame (tool→world).
+        tform_image_mm_to_tool (Tensor): shape (4, 4), Calibration matrix from image-mm to tool.
+        data_pairs (Tensor): shape (M, 2), Index pairs [i, j] indicating transforms from frame j → i (same for all B).
 
     Returns:
-        tforms_imagej_to_imagei_mm: (B, M, 4, 4), image mm transforms j → i
+        tform_imagej_to_imagei (Tensor): shape (B, M, 4, 4), Transform matrices from image_j → image_i in image-mm space.
     """
-    B, N, _, _ = tforms.shape
-    tform_tool_to_image_mm = torch.linalg.inv(tform_image_mm_to_tool)
-    tforms_inv = torch.linalg.inv(tforms)
+    B = tforms.shape[0]
+    M = data_pairs.shape[0]
+    i_idx, j_idx = data_pairs[:, 0], data_pairs[:, 1]  # (M,)
 
-    if data_pairs is not None:
-        # Global (arbitrary) mode: use provided index pairs
-        M = data_pairs.shape[1]
-        result = torch.zeros((B, M, 4, 4), device=tforms.device, dtype=tforms.dtype)
+    # Precompute inverse of the calibration matrix
+    tform_tool_to_image_mm = torch.linalg.inv(tform_image_mm_to_tool)  # (4, 4)
 
-        for b in range(B):
-            for m in range(M):
-                i, j = data_pairs[b, m]
-                T_toolj_to_tooli = torch.matmul(tforms_inv[b, i], tforms[b, j])
-                T_imagej_to_imagei = tform_tool_to_image_mm @ T_toolj_to_tooli @ tform_image_mm_to_tool
-                result[b, m] = T_imagej_to_imagei
+    # Invert tool poses: world → tool
+    tforms_inv = torch.linalg.inv(tforms)  # (B, N, 4, 4)
 
-    else:
-        # Local mode: adjacent frame pairs
-        assert lengths is not None, "lengths must be provided when data_pairs is None"
-        result = torch.zeros((B, N - 1, 4, 4), device=tforms.device, dtype=tforms.dtype)
+    # Select i-th and j-th frames from each sample in batch
+    tform_i_inv = tforms_inv[:, i_idx]     # (B, M, 4, 4): world → tool_i
+    tform_j     = tforms[:, j_idx]         # (B, M, 4, 4): tool_j → world
 
-        for b in range(B):
-            n = lengths[b]
-            T_tool1_to_tool0 = torch.matmul(tforms_inv[b, :n - 1], tforms[b, 1:n])
-            T_image1_to_image0 = tform_tool_to_image_mm @ T_tool1_to_tool0 @ tform_image_mm_to_tool
-            result[b, :n - 1] = T_image1_to_image0
+    # Compute tool_j → tool_i
+    tform_toolj_to_tooli = torch.matmul(tform_i_inv, tform_j)  # (B, M, 4, 4)
 
-    return result
+    # Convert to image-mm space: image_j → image_i
+    tform_imagej_to_imagei = (
+        tform_tool_to_image_mm @ tform_toolj_to_tooli @ tform_image_mm_to_tool
+    )  # (B, M, 4, 4)
+
+    return tform_imagej_to_imagei
 
 
-def params_to_transforms(params: torch.Tensor, lengths: torch.Tensor, fill_identity: bool = True) -> torch.Tensor:
+def params_to_transforms(params, fill_identity=True):
     """
-    Convert 6D params (Euler angles + translation) into 4x4 homogeneous matrices.
+    Convert 6D motion parameters (Euler angles + translation) to 4x4 transformation matrices.
+
     Args:
-        params: (B, max_n-1, 6) predicted params
-        lengths: (B,) actual number of valid pairs per sample, directly from dataloader and need to minus 1
-        fill_identity: if True, fill padded slots with identity; else zero
+        params (Tensor): shape (B, N-1, 6), Motion parameters for frame pairs. Last dim is [rx, ry, rz, tx, ty, tz].
+        fill_identity (bool): If True, initialize all outputs with identity matrices (used for debugging/safety).
+
     Returns:
-        matrix4x4: (B, max_n-1, 4, 4), per-frame transforms
+        tform_matrix (Tensor): shape (B, N-1, 4, 4), Homogeneous transformation matrices for each frame pair.
     """
-    B, max_n_minus_1, _ = params.shape
+    B, N_minus_1, _ = params.shape
     device = params.device
     dtype = params.dtype
 
-    # Preallocate output (default to identity or zeros)
+    # Initialize result tensor
     if fill_identity:
-        matrix4x4 = torch.eye(4, dtype=dtype, device=device).view(1, 1, 4, 4).repeat(B, max_n_minus_1, 1, 1)
+        tform_matrix = torch.eye(4, dtype=dtype, device=device).view(1, 1, 4, 4).repeat(B, N_minus_1, 1, 1)
     else:
-        matrix4x4 = torch.zeros(B, max_n_minus_1, 4, 4, dtype=dtype, device=device)
+        tform_matrix = torch.zeros(B, N_minus_1, 4, 4, dtype=dtype, device=device)
 
-    for i in range(B):
-        n = lengths[i].item()
-        if n == 0:
-            continue  # skip invalid samples
+    # Convert Euler angles to rotation matrices
+    R = tf.euler_angles_to_matrix(params[..., :3], convention='ZYX')     # (B, N-1, 3, 3)
+    t = params[..., 3:].unsqueeze(-1)                                     # (B, N-1, 3, 1)
+    Rt = torch.cat([R, t], dim=-1)                                        # (B, N-1, 3, 4)
 
-        param_i = params[i, :n-1]  # (n, 6)
-        R = tf.euler_angles_to_matrix(param_i[..., :3], convention='ZYX')  # (n-1, 3, 3)
-        t = param_i[..., 3:].unsqueeze(-1)                                # (n-1, 3, 1)
-        Rt = torch.cat([R, t], dim=2)                                     # (n-1, 3, 4)
-        bottom_row = torch.tensor([0, 0, 0, 1], dtype=dtype, device=device).view(1, 1, 4).expand(n-1, 1, 4)  # (n-1, 1, 4)
-        # print(Rt.shape, bottom_row.shape)
-        matrix4x4[i, :n] = torch.cat([Rt, bottom_row], dim=1)             # (n-1, 4, 4)
+    # Append homogeneous bottom row [0, 0, 0, 1]
+    bottom = torch.tensor([0, 0, 0, 1], dtype=dtype, device=device).view(1, 1, 1, 4)
+    bottom = bottom.expand(B, N_minus_1, 1, 4)                            # (B, N-1, 1, 4)
 
-    return matrix4x4
+    tform_matrix = torch.cat([Rt, bottom], dim=2)                         # (B, N-1, 4, 4)
+    return tform_matrix
 
 
-def get_network_pred_transforms(frames: torch.Tensor, network: torch.nn.Module, num_samples: int, infer_batch_size: int = 16):
+def get_network_pred_transforms(frames, network, num_samples, infer_batch_size=16):
     """
-    Predict local and global transforms from an ultrasound image sequence using batched sliding windows.
+    Predict local and global transforms from a (1, N, H, W) ultrasound sequence using batched sliding windows.
 
     Args:
-        frames: (1, N, H, W), input sequence
-        network: model to predict 6D params from frame chunks
-        num_samples: number of frames in each chunk
-        infer_batch_size: number of chunks processed in one forward pass
+        frames (Tensor): shape (1, N, H, W), Input image sequence (batch size must be 1).
+        network (nn.Module): Frame-pair regression network that maps (B, N, H, W) → (B, N-1, 6).
+        num_samples (int): Number of frames per input chunk (used to form N-1 pairs per chunk).
+        infer_batch_size (int): Number of chunks processed in one forward pass.
 
     Returns:
-        tforms_global: (N-1, 4, 4)
-        tforms_local: (N-1, 4, 4)
+        tforms_global (Tensor): shape (N-1, 4, 4), Cumulative transforms (frame t → frame 0).
+        tforms_local (Tensor): shape (N-1, 4, 4), Local transforms (frame t → frame t-1).
     """
     B, N, H, W = frames.shape
     assert B == 1, "Only supports input batch size 1."
     device = frames.device
 
-    # Divide into chunks of size `num_samples`
+    # Extract chunks: [(1, num_samples, H, W), ...]
     chunk_list = []
-    valid_starts = []
-    for i in range(0, N - num_samples + 1, num_samples):
-        chunk = frames[:, i:i + num_samples]  # shape: (1, num_samples, H, W)
+    for start in range(0, N - num_samples + 1, num_samples):
+        chunk = frames[:, start:start + num_samples]  # (1, num_samples, H, W)
         chunk_list.append(chunk)
-        valid_starts.append(i)
 
-    # Track results
-    tforms_global = torch.zeros((N - 1, 4, 4), device=device)
+    # Allocate result containers
     tforms_local = torch.zeros((N - 1, 4, 4), device=device)
+    tforms_global = torch.zeros((N - 1, 4, 4), device=device)
     cumulative = torch.eye(4, device=device)
-    idx = 0  # current position in output
+    idx = 0  # current output position
 
-    # Batch inference loop
+    # Run inference chunk-by-chunk
     with torch.no_grad():
         for batch_start in range(0, len(chunk_list), infer_batch_size):
-            batch_chunks = torch.cat(chunk_list[batch_start:batch_start + infer_batch_size], dim=0)  # (B', num_samples, H, W)
-            lengths = torch.full((batch_chunks.shape[0],), num_samples - 1, dtype=torch.long, device=device)
-            pred_params = network(batch_chunks, lengths)  # (B', num_samples-1, 6)
-            pred_tforms = params_to_transforms(pred_params, lengths)  # (B', num_samples-1, 4, 4)
+            # (B', num_samples, H, W)
+            batch_chunks = torch.cat(chunk_list[batch_start:batch_start + infer_batch_size], dim=0)
+            pred_params = network(batch_chunks)                          # (B', num_samples-1, 6)
+            pred_tforms = params_to_transforms(pred_params)             # (B', num_samples-1, 4, 4)
 
-            for b in range(pred_tforms.shape[0]):
-                for j in range(num_samples - 1):
+            B_prime, num_pairs, _, _ = pred_tforms.shape
+            for b in range(B_prime):
+                for j in range(num_pairs):
                     if idx >= N - 1:
                         break
                     tform = pred_tforms[b, j]
                     tforms_local[idx] = tform
-                    cumulative = torch.matmul(cumulative, tform) 
+                    cumulative = cumulative @ tform
                     tforms_global[idx] = cumulative
                     idx += 1
 
-    # Handle leftover (frames not covered by complete chunk)
+    # Fill remaining (if total frame count not divisible by chunk size)
     if idx < N - 1:
         num_pad = N - 1 - idx
-        tforms_local[idx:] = torch.eye(4, device=device).expand(num_pad, 4, 4)
+        tforms_local[idx:] = torch.eye(4, device=device)
         tforms_global[idx:] = cumulative.expand(num_pad, 4, 4)
 
     return tforms_global, tforms_local
