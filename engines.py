@@ -1,6 +1,9 @@
 import torch
 from tqdm import tqdm
+
+from tools.metrics import get_data_pairs_local 
 from tools.transforms import get_transforms_image_mm, params_to_transforms, transforms_to_points
+
 
 def train_one_epoch(args, dataloader, network, optimizer, 
                     criterion_loss_mse, criterion_loss_pcc, 
@@ -14,14 +17,15 @@ def train_one_epoch(args, dataloader, network, optimizer,
     for step, (frames, tforms, lengths) in enumerate(loop):
         frames, tforms, lengths = frames.to(device), tforms.to(device), lengths.to(device) 
 
-        labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths) 
+        data_pairs_local = get_data_pairs_local(frames.shape[1]) 
+        labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_local) 
 
         optimizer.zero_grad()
-        outputs = network(frames, lengths)
-        preds = params_to_transforms(outputs, lengths) 
+        outputs = network(frames)
+        preds = params_to_transforms(outputs) 
         
-        loss_mse = criterion_loss_mse(preds, labels, lengths) 
-        loss_pcc = criterion_loss_pcc(preds, labels, lengths) 
+        loss_mse = criterion_loss_mse(preds, labels) 
+        loss_pcc = criterion_loss_pcc(preds, labels) 
         loss = loss_mse + loss_pcc * 0.5   
         
         loss.backward()
@@ -53,16 +57,16 @@ def validate_one_epoch(args, dataloader, network,
     loop = tqdm(dataloader, desc='Validating', leave=False)
     with torch.no_grad():
         for step, (frames, tforms, lengths) in enumerate(loop):
-            frames = frames.to(device)
-            tforms = tforms.to(device)
-            lengths = lengths.to(device)
+            frames, tforms, lengths = frames.to(device), tforms.to(device), lengths.to(device) 
 
-            labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, lengths=lengths)
-            outputs = network(frames, lengths)
-            preds = params_to_transforms(outputs, lengths)
+            data_pairs_local = get_data_pairs_local(frames.shape[1]) 
+            labels = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_local)
 
-            loss_mse = criterion_loss_mse(preds, labels, lengths)
-            loss_pcc = criterion_loss_pcc(preds, labels, lengths)
+            outputs = network(frames)
+            preds = params_to_transforms(outputs)
+
+            loss_mse = criterion_loss_mse(preds, labels)
+            loss_pcc = criterion_loss_pcc(preds, labels)
             loss = loss_mse + 0.5 * loss_pcc
 
             preds_pts = transforms_to_points(preds, ref_points, tform_image_pixel_to_mm)
