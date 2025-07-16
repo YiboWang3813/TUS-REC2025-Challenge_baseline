@@ -5,12 +5,12 @@ from torch.utils.data import Dataset
 
 
 class FullSweepFreehandUSDataset(Dataset):
-    def __init__(self, src_dir, n_choices, fold=0, mode='train', transforms=None):
+    def __init__(self, src_dir, n, fold=0, mode='train', transforms=None):
         """
         Args:
             src_dir (str): dataset root dir
-            n_choices (List[int]): possible values of num_samples
-            fold (int): 0~4 for 5-fold
+            n (int): fixed number of frames per sample
+            fold (int): 0~4 for 5-fold cross-validation
             mode (str): 'train' or 'validate'
         """
         assert mode in ['train', 'validate']
@@ -18,11 +18,10 @@ class FullSweepFreehandUSDataset(Dataset):
         self.transforms = transforms
         self.fold = fold
         self.mode = mode
-        self.n_choices = n_choices
+        self.n = n
         self.subvolume_specs = []
         self.data_entries = []
 
-        # 读取样本路径
         self._load_data_paths()
         self._rebuild_subvolume_indices()
 
@@ -31,7 +30,7 @@ class FullSweepFreehandUSDataset(Dataset):
         subject_names = sorted(os.listdir(work_dir))
         object_names = ['LH_rotation.h5', 'RH_rotation.h5']
 
-        # 分割折数
+        # 5-fold split
         fold_size = len(subject_names) // 5
         val_start = self.fold * fold_size
         val_end = val_start + fold_size
@@ -55,47 +54,29 @@ class FullSweepFreehandUSDataset(Dataset):
             with h5py.File(path, 'r') as f:
                 N = f['frames'].shape[0]
 
-            for n in self.n_choices:
-                if n > N:
-                    continue
-                for start_idx in range(N - n + 1):
-                    self.subvolume_specs.append((sample_idx, start_idx, n))
+            if self.n > N:
+                continue
 
-    def update_n_choices_and_rebuild(self, new_n_choices):
-        self.n_choices = new_n_choices
+            for start_idx in range(N - self.n + 1):
+                self.subvolume_specs.append((sample_idx, start_idx))
+
+    def update_n_and_rebuild(self, new_n: int):
+        """Update number of frames per sample and rebuild slices"""
+        self.n = new_n
         self._rebuild_subvolume_indices()
 
     def __len__(self):
         return len(self.subvolume_specs)
 
     def __getitem__(self, index):
-        sample_idx, start_idx, n = self.subvolume_specs[index]
+        sample_idx, start_idx = self.subvolume_specs[index]
         path = self.data_entries[sample_idx]
 
         with h5py.File(path, 'r') as f:
-            frames = torch.tensor(f['frames'][start_idx:start_idx + n])       # (n, H, W)
-            tforms = torch.tensor(f['tforms'][start_idx:start_idx + n])       # (n, 4, 4)
+            frames = torch.tensor(f['frames'][start_idx:start_idx + self.n])     # (n, H, W)
+            tforms = torch.tensor(f['tforms'][start_idx:start_idx + self.n])     # (n, 4, 4)
 
         if self.transforms is not None:
             frames = self.transforms(frames)
 
-        return frames, tforms, n
-
-
-def pad_collate_fn(batch):
-    """
-    Args:
-        batch: list of (frames: [n, H, W], tforms: [n, 4, 4], n)
-    Returns:
-        padded_frames: [B, n_max, H, W]
-        padded_tforms: [B, n_max, 4, 4]
-        lengths: [B] actual n values
-    """
-    frames_list = [item[0] for item in batch]
-    tforms_list = [item[1] for item in batch]
-    lengths = [item[2] for item in batch]
-
-    padded_frames = torch.nn.utils.rnn.pad_sequence(frames_list, batch_first=True)
-    padded_tforms = torch.nn.utils.rnn.pad_sequence(tforms_list, batch_first=True)
-
-    return padded_frames, padded_tforms, torch.tensor(lengths)
+        return frames, tforms, self.n
