@@ -70,21 +70,13 @@ def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale, image_po
     B, N = tforms.shape[:2]
     device = tforms.device
 
-    # Build data_pairs for global
-    data_pairs_global = get_data_pairs_global(N).unsqueeze(0).to(device)  # shape: (1, N-1, 2)
-    tforms_global = get_transforms_image_mm(
-        tforms,
-        tform_image_mm_to_tool,
-        data_pairs=data_pairs_global
-    ).squeeze(0)  # (N-1, 4, 4)
+    # Use global data pairs to extract tforms 
+    data_pairs_global = get_data_pairs_global(N).to(device)  # shape: (N-1, 2)
+    tforms_global = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_global).squeeze(0)  # (N-1, 4, 4)
 
-    # Local uses lengths instead of data_pairs
-    lengths = torch.tensor([N], device=device)  # shape: (1,)
-    tforms_local = get_transforms_image_mm(
-        tforms,
-        tform_image_mm_to_tool,
-        lengths=lengths
-    ).squeeze(0)  # (N-1, 4, 4)
+    # Use local data pairs to extract tforms 
+    data_pairs_local = get_data_pairs_local(N).to(device)  # (N-1, 2)
+    tforms_local = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_local).squeeze(0)  # (N-1, 4, 4)
 
     # DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
@@ -119,26 +111,17 @@ def get_ddfs_from_network_pred(frames, network, num_samples, infer_batch_size,
     """
     # Predict global and local transforms
     tforms_global, tforms_local = get_network_pred_transforms(
-        frames=frames,
-        network=network,
-        num_samples=num_samples,
-        infer_batch_size=infer_batch_size
+        frames, network, num_samples, infer_batch_size
     )
 
     # Compute global DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
-        tforms=tforms_global,
-        tform_calib_scale=tform_calib_scale,
-        image_points=image_points,
-        landmarks=landmarks
+        tforms_global, tform_calib_scale, image_points, landmarks
     )
 
     # Compute local DDFs
     ddf_all_local, ddf_landmarks_local = get_ddfs_for_all_and_landmarks(
-        tforms=tforms_local,
-        tform_calib_scale=tform_calib_scale,
-        image_points=image_points,
-        landmarks=landmarks
+        tforms_local, tform_calib_scale, image_points, landmarks
     )
 
     return ddf_all_global, ddf_landmarks_global, ddf_all_local, ddf_landmarks_local
