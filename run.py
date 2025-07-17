@@ -125,10 +125,10 @@ def train(args):
             # Save network checkpoint and metrics
             writer.save_network(network, args.network_name, f'epoch_{epoch}')
             writer.add_scalars({
-                'loss_train': loss_train.item(),
-                'dist_train': dist_train.item(),
-                'loss_valid': loss_valid.item(),
-                'dist_valid': dist_valid.item(),
+                'loss_train': loss_train,
+                'dist_train': dist_train,
+                'loss_valid': loss_valid,
+                'dist_valid': dist_valid,
             }, epoch)
 
             if dist_valid < best_dist_valid:
