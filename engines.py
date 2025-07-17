@@ -36,7 +36,7 @@ def train_one_epoch(args, dataloader, network, optimizer,
         dist = criterion_metric(preds_pts, labels_pts).detach()
     
         this_epoch_loss += loss.item()
-        this_epoch_dist += dist
+        this_epoch_dist += dist.item()
 
         loop.set_postfix(loss=this_epoch_loss/(step+1), dist=this_epoch_dist/(step+1))
 
@@ -74,7 +74,7 @@ def validate_one_epoch(args, dataloader, network,
             dist = criterion_metric(preds_pts, labels_pts)
 
             val_loss_total += loss.item()
-            val_dist_total += dist
+            val_dist_total += dist.item()
 
             loop.set_postfix(loss=val_loss_total/(step+1), dist=val_dist_total/(step+1))
 
