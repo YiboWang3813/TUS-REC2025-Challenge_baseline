@@ -82,11 +82,11 @@ def main():
         landmarks = h5py.File(landmark_path, 'r')[object_type][()]
         print(f'load landmarks time cost: {(time.time() - t2):.3f} s') 
 
-        # Normalize and move to GPU
+        # Normalize inputs 
         t3 = time.time() 
-        frames = torch.from_numpy((frames / 255.0).astype(np.float32)).unsqueeze(0).to(device)  # shape: (1, N, H, W)
-        tforms = torch.from_numpy(tforms).unsqueeze(0).to(device)          # shape: (1, N, 4, 4)
-        landmarks = torch.from_numpy(landmarks).to(device)                 # shape: (100, 3) 
+        frames = torch.from_numpy((frames / 255.0).astype(np.float32)).unsqueeze(0)  # shape: (1, N, H, W)
+        tforms = torch.from_numpy(tforms).unsqueeze(0)          # shape: (1, N, 4, 4)
+        landmarks = torch.from_numpy(landmarks)                 # shape: (100, 3) 
         print(f'move data to GPU, time cost: {(time.time() - t3):.3f} s')
 
         # Compute GT DDFs

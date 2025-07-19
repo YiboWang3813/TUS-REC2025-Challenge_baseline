@@ -147,7 +147,7 @@ def get_network_pred_transforms(frames, network, num_samples, infer_batch_size=1
     """
     B, N, H, W = frames.shape
     assert B == 1, "Only supports input batch size 1."
-    device = frames.device
+    device = next(network.parameters()).device
 
     # Extract chunks: [(1, num_samples, H, W), ...]
     chunk_list = []
@@ -166,6 +166,8 @@ def get_network_pred_transforms(frames, network, num_samples, infer_batch_size=1
         for batch_start in range(0, len(chunk_list), infer_batch_size):
             # (B', num_samples, H, W)
             batch_chunks = torch.cat(chunk_list[batch_start:batch_start + infer_batch_size], dim=0)
+            batch_chunks = batch_chunks.float().to(device) 
+
             pred_params = network(batch_chunks.float())                          # (B', num_samples-1, 6)
             pred_tforms = params_to_transforms(pred_params)             # (B', num_samples-1, 4, 4)
 

@@ -50,9 +50,10 @@ def get_ddfs_for_all_and_landmarks(tforms, tform_calib_scale, image_points, land
     return ddf_all, ddf_landmarks
 
 
-def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale, image_points, landmarks):
+def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale,
+                     image_points, landmarks, split_size: int = 128):
     """
-    Compute DDFs from ground truth tool poses (both global and local).
+    Compute DDFs from ground truth tool poses (both global and local), with batched transform computation.
 
     Args:
         tforms (torch.Tensor): shape=(B, N, 4, 4), ground truth tool poses in world space
@@ -60,6 +61,7 @@ def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale, image_po
         tform_calib_scale (torch.Tensor): shape=(4, 4), pixel-to-mm scaling transform
         image_points (torch.Tensor): shape=(4, H*W), homogeneous pixel coordinates
         landmarks (torch.Tensor): shape=(L, 3), landmark coordinates: (frame_id in 1~N-1, x, y)
+        split_size (int): number of transform pairs per batch (to reduce memory usage)
 
     Returns:
         ddf_all_global (np.ndarray): shape=(N-1, 3, H*W), global DDF for all pixels
@@ -70,15 +72,24 @@ def get_ddfs_from_gt(tforms, tform_image_mm_to_tool, tform_calib_scale, image_po
     B, N = tforms.shape[:2]
     device = tforms.device
 
-    # Use global data pairs to extract tforms 
-    data_pairs_global = get_data_pairs_global(N).to(device)  # shape: (N-1, 2)
-    tforms_global = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_global).squeeze(0)  # (N-1, 4, 4)
+    def batched_get_transforms(data_pairs):
+        all_tforms = []
+        for start in range(0, data_pairs.shape[0], split_size):
+            end = min(start + split_size, data_pairs.shape[0])
+            dp_batch = data_pairs[start:end].to(device)  # (M', 2)
+            tf_batch = get_transforms_image_mm(tforms, tform_image_mm_to_tool, dp_batch)
+            all_tforms.append(tf_batch.squeeze(0))  # (M', 4, 4)
+        return torch.cat(all_tforms, dim=0)  # (M, 4, 4)
 
-    # Use local data pairs to extract tforms 
-    data_pairs_local = get_data_pairs_local(N).to(device)  # (N-1, 2)
-    tforms_local = get_transforms_image_mm(tforms, tform_image_mm_to_tool, data_pairs_local).squeeze(0)  # (N-1, 4, 4)
+    # Get global and local data pairs
+    data_pairs_global = get_data_pairs_global(N)  # shape: (N-1, 2)
+    data_pairs_local = get_data_pairs_local(N)    # shape: (N-1, 2)
 
-    # DDFs
+    # Compute transforms in batches
+    tforms_global = batched_get_transforms(data_pairs_global)  # (N-1, 4, 4)
+    tforms_local = batched_get_transforms(data_pairs_local)    # (N-1, 4, 4)
+
+    # Compute DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
         tforms_global, tform_calib_scale, image_points, landmarks
     )
@@ -113,9 +124,6 @@ def get_ddfs_from_network_pred(frames, network, num_samples, infer_batch_size,
     tforms_global, tforms_local = get_network_pred_transforms(
         frames, network, num_samples, infer_batch_size
     )
-
-    print(tforms_global.shape, tforms_local.shape) 
-    print(torch.cuda.max_memory_allocated()) 
 
     # Compute global DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
