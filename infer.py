@@ -84,9 +84,9 @@ def main():
 
         # Normalize inputs 
         t3 = time.time() 
-        frames = torch.from_numpy((frames / 255.0).astype(np.float32)).unsqueeze(0)  # shape: (1, N, H, W)
-        tforms = torch.from_numpy(tforms).unsqueeze(0)          # shape: (1, N, 4, 4)
-        landmarks = torch.from_numpy(landmarks)                 # shape: (100, 3) 
+        frames = torch.from_numpy((frames.astype(np.float32) / 255.0)).unsqueeze(0)  # shape: (1, N, H, W)
+        tforms = torch.from_numpy(tforms).unsqueeze(0).to(device)          # shape: (1, N, 4, 4)
+        landmarks = torch.from_numpy(landmarks).to(device)                 # shape: (100, 3) 
         print(f'move data to GPU, time cost: {(time.time() - t3):.3f} s')
 
         # Compute GT DDFs
@@ -115,6 +115,11 @@ def main():
         all_infer_time.append(infer_time)
 
         print(f'{scan_name} done, errors: {errors}, scores: {scores}')
+
+        # clear 
+        del frames, tforms, landmarks, ddfs_gt, ddfs_pred, errors, scores 
+
+        torch.cuda.empty_cache() 
 
     # Save final evaluation results
     results = {
