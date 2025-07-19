@@ -53,5 +53,5 @@ def get_n_for_epoch(epoch, total_epochs=30):
     return n_values[n_index]
 
 
-def get_batch_size_for_n(n, base_batch=8, base_n=16):
+def get_batch_size_for_n(n, base_batch=16, base_n=16):
     return max(1, base_batch * base_n // n)

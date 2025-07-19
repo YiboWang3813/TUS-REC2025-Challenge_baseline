@@ -75,9 +75,10 @@ def train(args):
     best_dist_valid = float('inf')
     # best_loss_valid = float('inf')
 
-    for epoch in range(args.n_epochs):
+    for epoch in range(args.n_epochs + 1):
         # Set n_choices and batch_size for current epoch
-        current_n = get_n_for_epoch(epoch)
+        # current_n = get_n_for_epoch(epoch)
+        current_n = 4 
         dataset_train.update_n_and_rebuild(current_n)
         dataset_valid.update_n_and_rebuild(current_n)
 
@@ -86,6 +87,7 @@ def train(args):
         dataloader_train = DataLoader(
             dataset_train,
             batch_size=batch_size,
+            num_workers=8,
             shuffle=True
         )
 
@@ -102,12 +104,13 @@ def train(args):
         writer.print_info(epoch, loss_train, dist_train, 'train')
 
         # Run validation periodically
-        if epoch % args.freq_val == 0:
+        if epoch % args.freq_val == 0 and epoch != 0:
             batch_size_val = get_batch_size_for_n(current_n)
 
             dataloader_val = DataLoader(
                 dataset_valid,
                 batch_size=batch_size_val,
+                num_workers=8,
                 shuffle=False
             )
 
@@ -149,10 +152,10 @@ if __name__ == '__main__':
     parser.add_argument('--network_name', type=str, default='frame_pair_model')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--n_epochs', type=int, default=30)
+    parser.add_argument('--n_epochs', type=int, default=200)
     # parser.add_argument('--freq_info', type=int, default=10)
     # parser.add_argument('--freq_save', type=int, default=10)
-    parser.add_argument('--freq_val', type=int, default=5)
+    parser.add_argument('--freq_val', type=int, default=20)
     parser.add_argument('--fold', type=int, default=0, help='Fold index (0~4)')
 
     args = parser.parse_args()
