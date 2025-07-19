@@ -114,6 +114,9 @@ def get_ddfs_from_network_pred(frames, network, num_samples, infer_batch_size,
         frames, network, num_samples, infer_batch_size
     )
 
+    print(tforms_global.shape, tforms_local.shape) 
+    print(torch.cuda.max_memory_allocated()) 
+
     # Compute global DDFs
     ddf_all_global, ddf_landmarks_global = get_ddfs_for_all_and_landmarks(
         tforms_global, tform_calib_scale, image_points, landmarks

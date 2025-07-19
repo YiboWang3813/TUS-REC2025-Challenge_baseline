@@ -132,7 +132,7 @@ def train(args):
             }, epoch)
 
             if dist_valid < best_dist_valid:
-                best_dist_valid = dist_valid.item()
+                best_dist_valid = dist_valid
                 writer.save_network(network, args.network_name, 'best')
 
     # Save best metrics for summary

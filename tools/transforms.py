@@ -166,7 +166,7 @@ def get_network_pred_transforms(frames, network, num_samples, infer_batch_size=1
         for batch_start in range(0, len(chunk_list), infer_batch_size):
             # (B', num_samples, H, W)
             batch_chunks = torch.cat(chunk_list[batch_start:batch_start + infer_batch_size], dim=0)
-            pred_params = network(batch_chunks)                          # (B', num_samples-1, 6)
+            pred_params = network(batch_chunks.float())                          # (B', num_samples-1, 6)
             pred_tforms = params_to_transforms(pred_params)             # (B', num_samples-1, 4, 4)
 
             B_prime, num_pairs, _, _ = pred_tforms.shape
